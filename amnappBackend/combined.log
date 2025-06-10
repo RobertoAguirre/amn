@@ -1,0 +1,50 @@
+{"level":"info","message":"Servidor corriendo en puerto 3000","timestamp":"2025-06-04T05:11:44.281Z"}
+{"level":"error","message":"Error conectando a MongoDB: The `uri` parameter to `openUri()` must be a string, got \"undefined\". Make sure the first parameter to `mongoose.connect()` or `mongoose.createConnection()` is a string.","stack":"MongooseError: The `uri` parameter to `openUri()` must be a string, got \"undefined\". Make sure the first parameter to `mongoose.connect()` or `mongoose.createConnection()` is a string.\n    at NativeConnection.createClient (/home/robert/Repos/AMN/amnappBackend/node_modules/mongoose/lib/drivers/node-mongodb-native/connection.js:237:11)\n    at NativeConnection.openUri (/home/robert/Repos/AMN/amnappBackend/node_modules/mongoose/lib/connection.js:1071:34)\n    at Mongoose.connect (/home/robert/Repos/AMN/amnappBackend/node_modules/mongoose/lib/mongoose.js:450:15)\n    at Object.<anonymous> (/home/robert/Repos/AMN/amnappBackend/server.js:44:10)\n    at Module._compile (node:internal/modules/cjs/loader:1730:14)\n    at Object..js (node:internal/modules/cjs/loader:1895:10)\n    at Module.load (node:internal/modules/cjs/loader:1465:32)\n    at Function._load (node:internal/modules/cjs/loader:1282:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)","timestamp":"2025-06-04T05:11:44.284Z"}
+{"level":"info","message":"Servidor corriendo en puerto 3000","timestamp":"2025-06-04T05:12:52.879Z"}
+{"level":"error","message":"Error conectando a MongoDB: The `uri` parameter to `openUri()` must be a string, got \"undefined\". Make sure the first parameter to `mongoose.connect()` or `mongoose.createConnection()` is a string.","stack":"MongooseError: The `uri` parameter to `openUri()` must be a string, got \"undefined\". Make sure the first parameter to `mongoose.connect()` or `mongoose.createConnection()` is a string.\n    at NativeConnection.createClient (/home/robert/Repos/AMN/amnappBackend/node_modules/mongoose/lib/drivers/node-mongodb-native/connection.js:237:11)\n    at NativeConnection.openUri (/home/robert/Repos/AMN/amnappBackend/node_modules/mongoose/lib/connection.js:1071:34)\n    at Mongoose.connect (/home/robert/Repos/AMN/amnappBackend/node_modules/mongoose/lib/mongoose.js:450:15)\n    at Object.<anonymous> (/home/robert/Repos/AMN/amnappBackend/server.js:44:10)\n    at Module._compile (node:internal/modules/cjs/loader:1730:14)\n    at Object..js (node:internal/modules/cjs/loader:1895:10)\n    at Module.load (node:internal/modules/cjs/loader:1465:32)\n    at Function._load (node:internal/modules/cjs/loader:1282:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)","timestamp":"2025-06-04T05:12:52.882Z"}
+{"level":"info","message":"Servidor corriendo en puerto 3000","timestamp":"2025-06-04T05:13:02.742Z"}
+{"level":"error","message":"Error conectando a MongoDB: The `uri` parameter to `openUri()` must be a string, got \"undefined\". Make sure the first parameter to `mongoose.connect()` or `mongoose.createConnection()` is a string.","stack":"MongooseError: The `uri` parameter to `openUri()` must be a string, got \"undefined\". Make sure the first parameter to `mongoose.connect()` or `mongoose.createConnection()` is a string.\n    at NativeConnection.createClient (/home/robert/Repos/AMN/amnappBackend/node_modules/mongoose/lib/drivers/node-mongodb-native/connection.js:237:11)\n    at NativeConnection.openUri (/home/robert/Repos/AMN/amnappBackend/node_modules/mongoose/lib/connection.js:1071:34)\n    at Mongoose.connect (/home/robert/Repos/AMN/amnappBackend/node_modules/mongoose/lib/mongoose.js:450:15)\n    at Object.<anonymous> (/home/robert/Repos/AMN/amnappBackend/server.js:44:10)\n    at Module._compile (node:internal/modules/cjs/loader:1730:14)\n    at Object..js (node:internal/modules/cjs/loader:1895:10)\n    at Module.load (node:internal/modules/cjs/loader:1465:32)\n    at Function._load (node:internal/modules/cjs/loader:1282:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)","timestamp":"2025-06-04T05:13:02.744Z"}
+{"level":"info","message":"Servidor corriendo en puerto 3000","timestamp":"2025-06-04T05:13:14.522Z"}
+{"level":"error","message":"Error conectando a MongoDB: The `uri` parameter to `openUri()` must be a string, got \"undefined\". Make sure the first parameter to `mongoose.connect()` or `mongoose.createConnection()` is a string.","stack":"MongooseError: The `uri` parameter to `openUri()` must be a string, got \"undefined\". Make sure the first parameter to `mongoose.connect()` or `mongoose.createConnection()` is a string.\n    at NativeConnection.createClient (/home/robert/Repos/AMN/amnappBackend/node_modules/mongoose/lib/drivers/node-mongodb-native/connection.js:237:11)\n    at NativeConnection.openUri (/home/robert/Repos/AMN/amnappBackend/node_modules/mongoose/lib/connection.js:1071:34)\n    at Mongoose.connect (/home/robert/Repos/AMN/amnappBackend/node_modules/mongoose/lib/mongoose.js:450:15)\n    at Object.<anonymous> (/home/robert/Repos/AMN/amnappBackend/server.js:44:10)\n    at Module._compile (node:internal/modules/cjs/loader:1730:14)\n    at Object..js (node:internal/modules/cjs/loader:1895:10)\n    at Module.load (node:internal/modules/cjs/loader:1465:32)\n    at Function._load (node:internal/modules/cjs/loader:1282:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)","timestamp":"2025-06-04T05:13:14.524Z"}
+{"level":"info","message":"Servidor corriendo en puerto 3000","timestamp":"2025-06-04T05:23:18.290Z"}
+{"level":"info","message":"Conectado a MongoDB","timestamp":"2025-06-04T05:23:19.200Z"}
+[2025-06-04T05:23:55.448Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-06-04T05:23:56.193Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-06-04T05:23:56.193Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-06-04T05:23:56.193Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-06-04T05:23:56.193Z] [32minfo[39m: 🌍 Entorno: development
+[2025-06-04T05:24:07.960Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-06-04T05:24:08.705Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-06-04T05:24:08.706Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-06-04T05:24:08.706Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-06-04T05:24:08.706Z] [32minfo[39m: 🌍 Entorno: development
+[2025-06-04T05:24:13.635Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-06-04T05:24:14.363Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-06-04T05:24:14.363Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-06-04T05:24:14.364Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-06-04T05:24:14.364Z] [32minfo[39m: 🌍 Entorno: development
+[2025-06-04T05:24:20.633Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-06-04T05:24:21.569Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-06-04T05:24:21.569Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-06-04T05:24:21.569Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-06-04T05:24:21.569Z] [32minfo[39m: 🌍 Entorno: development
+[2025-06-04T17:05:56.969Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-06-04T17:05:57.864Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-06-04T17:05:57.864Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-06-04T17:05:57.864Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-06-04T17:05:57.865Z] [32minfo[39m: 🌍 Entorno: development
+[2025-06-04T17:06:29.463Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-06-04T17:06:30.204Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-06-04T17:06:30.205Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-06-04T17:06:30.205Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-06-04T17:06:30.205Z] [32minfo[39m: 🌍 Entorno: development
+[2025-06-04T17:06:48.249Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-06-04T17:06:48.981Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-06-04T17:06:48.981Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-06-04T17:06:48.982Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-06-04T17:06:48.982Z] [32minfo[39m: 🌍 Entorno: development
+[2025-06-04T17:06:57.340Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-06-04T17:06:59.223Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-06-04T17:06:59.223Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-06-04T17:06:59.223Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-06-04T17:06:59.224Z] [32minfo[39m: 🌍 Entorno: development
