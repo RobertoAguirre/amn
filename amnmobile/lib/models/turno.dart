@@ -36,7 +36,24 @@ class Turno {
     this.longitud,
   });
 
-  factory Turno.fromJson(Map<String, dynamic> json) => _$TurnoFromJson(json);
+  factory Turno.fromJson(Map<String, dynamic> json) => Turno(
+        id: json['id'] as int?,
+        fecha: DateTime.parse(json['fecha'] as String),
+        tipoTurno: json['tipoTurno'] as String,
+        operador: json['operador'] as String,
+        supervisor: json['supervisor'] as String,
+        lineaProduccion: json['lineaProduccion'] as String,
+        producto: json['producto'] as String,
+        lote: json['lote'] as String,
+        cantidadProducida: json['cantidadProducida'] as int,
+        cantidadRechazada: json['cantidadRechazada'] as int,
+        firmaDigital: json['firmaDigital'] as String?,
+        sincronizado: (json['sincronizado'] is int)
+            ? json['sincronizado'] == 1
+            : (json['sincronizado'] as bool? ?? false),
+        latitud: (json['latitud'] as num?)?.toDouble(),
+        longitud: (json['longitud'] as num?)?.toDouble(),
+      );
   Map<String, dynamic> toJson() => _$TurnoToJson(this);
 
   Turno copyWith({

@@ -162,4 +162,45 @@ router.post('/individual/bulk', auth, async (req, res) => {
   }
 });
 
+// Endpoint público para MVP (sin autenticación)
+router.post('/individual/mvp', async (req, res) => {
+  try {
+    const registro = new RegistroIndividual({
+      ...req.body,
+      sincronizado: true
+    });
+    await registro.save();
+    res.status(201).json({
+      error: false,
+      message: 'Registro individual creado (MVP)',
+      data: registro
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: true,
+      message: 'Error al crear registro individual (MVP)',
+      details: error.message
+    });
+  }
+});
+
+// Endpoint público para MVP (sin autenticación) - obtener registros individuales por turnoId
+router.get('/individual/mvp', async (req, res) => {
+  try {
+    const { turnoId } = req.query;
+    const query = turnoId ? { turnoId: Number(turnoId) } : {};
+    const registros = await RegistroIndividual.find(query).sort({ fecha: -1 });
+    res.json({
+      error: false,
+      data: registros
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: true,
+      message: 'Error al obtener registros individuales (MVP)',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router; 

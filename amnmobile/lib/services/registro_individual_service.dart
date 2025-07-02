@@ -39,7 +39,10 @@ class RegistroIndividualService {
 
   Future<int> guardarRegistro(RegistroIndividual registro) async {
     await _initDatabase();
-    return await _db.insert('registros_individuales', registro.toJson());
+    return await _db.insert('registros_individuales', {
+      ...registro.toJson(),
+      'sincronizado': 0,
+    });
   }
 
   Future<List<RegistroIndividual>> obtenerRegistrosPorTurno(int turnoId) async {
@@ -62,21 +65,26 @@ class RegistroIndividualService {
     return List.generate(maps.length, (i) => RegistroIndividual.fromJson(maps[i]));
   }
 
+  Future<void> marcarRegistroSincronizado(int id) async {
+    await _initDatabase();
+    await _db.update(
+      'registros_individuales',
+      {'sincronizado': 1},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<void> sincronizarRegistros() async {
-    final registrosNoSincronizados = await obtenerRegistrosNoSincronizados();
-    for (final registro in registrosNoSincronizados) {
+    final registros = await obtenerRegistrosNoSincronizados();
+    for (final registro in registros) {
       try {
-        final response = await _dio.post('/registro', data: registro.toJson());
-        if (response.statusCode == 200) {
-          await _db.update(
-            'registros_individuales',
-            {'sincronizado': 1},
-            where: 'id = ?',
-            whereArgs: [registro.id],
-          );
+        final response = await _dio.post('/registro/individual/mvp', data: registro.toJson());
+        if (response.statusCode == 201) {
+          await marcarRegistroSincronizado(registro.id!);
         }
       } catch (e) {
-        print('Error sincronizando registro ${registro.id}: $e');
+        // Ignorar error, se reintentará después
       }
     }
   }

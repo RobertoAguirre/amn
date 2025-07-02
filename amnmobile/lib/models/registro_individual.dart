@@ -24,6 +24,17 @@ class RegistroIndividual {
     required this.fecha,
   });
 
-  factory RegistroIndividual.fromJson(Map<String, dynamic> json) => _$RegistroIndividualFromJson(json);
+  factory RegistroIndividual.fromJson(Map<String, dynamic> json) => RegistroIndividual(
+        id: json['id'] as int?,
+        turnoId: json['turnoId'] as int,
+        defecto: json['defecto'] as String,
+        cantidad: json['cantidad'] as int,
+        observaciones: json['observaciones'] as String?,
+        firmaDigital: json['firmaDigital'] as String?,
+        sincronizado: (json['sincronizado'] is int)
+            ? json['sincronizado'] == 1
+            : (json['sincronizado'] as bool? ?? false),
+        fecha: DateTime.parse(json['fecha'] as String),
+      );
   Map<String, dynamic> toJson() => _$RegistroIndividualToJson(this);
 } 

@@ -162,4 +162,43 @@ router.post('/bulk', auth, async (req, res) => {
   }
 });
 
+// Endpoint público para MVP (sin autenticación)
+router.post('/mvp', async (req, res) => {
+  try {
+    const turno = new Turno({
+      ...req.body,
+      sincronizado: true
+    });
+    await turno.save();
+    res.status(201).json({
+      error: false,
+      message: 'Turno creado (MVP)',
+      data: turno
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: true,
+      message: 'Error al crear turno (MVP)',
+      details: error.message
+    });
+  }
+});
+
+// Endpoint público para MVP (sin autenticación) - obtener turnos
+router.get('/mvp', async (req, res) => {
+  try {
+    const turnos = await Turno.find().sort({ fecha: -1 });
+    res.json({
+      error: false,
+      data: turnos
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: true,
+      message: 'Error al obtener turnos (MVP)',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router; 

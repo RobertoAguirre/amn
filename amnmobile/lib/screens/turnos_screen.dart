@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/turno.dart';
 import '../services/turno_service.dart';
 import 'nuevo_turno_screen.dart';
+import 'registro_individual_screen.dart';
 
 class TurnosScreen extends StatefulWidget {
   const TurnosScreen({super.key});
@@ -79,7 +80,12 @@ class _TurnosScreenState extends State<TurnosScreen> {
                             ? const Icon(Icons.check_circle, color: Colors.green)
                             : const Icon(Icons.sync_problem, color: Colors.orange),
                         onTap: () {
-                          // TODO: Implementar vista detallada del turno
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RegistroIndividualScreen(turnoId: turno.id!),
+                            ),
+                          );
                         },
                       ),
                     );

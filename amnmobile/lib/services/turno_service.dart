@@ -14,10 +14,8 @@ class TurnoService {
 
   Future<void> _initDatabase() async {
     if (_initialized) return;
-
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'turnos.db');
-
     _db = await openDatabase(
       path,
       version: 1,
@@ -42,13 +40,15 @@ class TurnoService {
         ''');
       },
     );
-
     _initialized = true;
   }
 
   Future<int> guardarTurno(Turno turno) async {
     await _initDatabase();
-    return await _db.insert('turnos', turno.toJson());
+    return await _db.insert('turnos', {
+      ...turno.toJson(),
+      'sincronizado': 0,
+    });
   }
 
   Future<List<Turno>> obtenerTurnos() async {
@@ -67,26 +67,6 @@ class TurnoService {
     return List.generate(maps.length, (i) => Turno.fromJson(maps[i]));
   }
 
-  Future<void> sincronizarTurnos() async {
-    final turnosNoSincronizados = await obtenerTurnosNoSincronizados();
-    
-    for (final turno in turnosNoSincronizados) {
-      try {
-        final response = await _dio.post('/turnos', data: turno.toJson());
-        if (response.statusCode == 200) {
-          await _db.update(
-            'turnos',
-            {'sincronizado': 1},
-            where: 'id = ?',
-            whereArgs: [turno.id],
-          );
-        }
-      } catch (e) {
-        print('Error sincronizando turno ${turno.id}: $e');
-      }
-    }
-  }
-
   Future<void> marcarTurnoSincronizado(int id) async {
     await _initDatabase();
     await _db.update(
@@ -95,5 +75,19 @@ class TurnoService {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<void> sincronizarTurnos() async {
+    final turnos = await obtenerTurnosNoSincronizados();
+    for (final turno in turnos) {
+      try {
+        final response = await _dio.post('/turnos/mvp', data: turno.toJson());
+        if (response.statusCode == 201) {
+          await marcarTurnoSincronizado(turno.id!);
+        }
+      } catch (e) {
+        // Ignorar error, se reintentará después
+      }
+    }
   }
 } 
