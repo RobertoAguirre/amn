@@ -5,7 +5,7 @@ import 'dart:io';
 
 class AuthService extends ChangeNotifier {
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: Platform.isAndroid ? 'http://10.0.2.2:3000/api' : 'http://localhost:3000/api',
+    baseUrl: Platform.isAndroid ? 'http://192.168.0.106:3000/api' : 'http://localhost:3000/api',
     connectTimeout: const Duration(seconds: 5),
     receiveTimeout: const Duration(seconds: 3),
   ));

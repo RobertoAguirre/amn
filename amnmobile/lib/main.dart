@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/turnos_screen.dart';
+import 'screens/checador_screen.dart';
 
 const Color amnYellow = Color(0xFFFFC600);
 const Color amnBlack = Color(0xFF000000);
@@ -73,7 +73,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const TurnosScreen(),
+      home: const ChecadorScreen(),
     );
   }
 }

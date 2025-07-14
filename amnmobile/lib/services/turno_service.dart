@@ -8,7 +8,7 @@ class TurnoService {
   late Database _db;
   bool _initialized = false;
 
-  TurnoService([Dio? dio]) : _dio = dio ?? Dio(BaseOptions(baseUrl: 'http://10.0.2.2:3000/api')) {
+  TurnoService([Dio? dio]) : _dio = dio ?? Dio(BaseOptions(baseUrl: 'http://192.168.0.106:3000/api')) {
     _initDatabase();
   }
 
