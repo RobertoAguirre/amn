@@ -58,3 +58,103 @@
 [2025-07-02T07:45:13.990Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
 [2025-07-02T07:45:13.991Z] [32minfo[39m: 🔌 Puerto: 3000
 [2025-07-02T07:45:13.991Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-04T18:55:25.632Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-04T18:55:26.652Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-04T18:55:26.652Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-04T18:55:26.652Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-04T18:55:26.652Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T15:15:37.487Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T15:15:38.393Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T15:15:38.393Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T15:15:38.393Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T15:15:38.393Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T15:30:25.541Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T15:30:26.401Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T15:30:26.401Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T15:30:26.401Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T15:30:26.402Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T15:33:21.378Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T15:33:22.284Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T15:33:22.284Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T15:33:22.284Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T15:33:22.284Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T16:06:05.049Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T16:06:06.937Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T16:06:06.937Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T16:06:06.938Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T16:06:06.938Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T17:10:24.073Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T17:10:24.929Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T17:10:24.930Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T17:10:24.930Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T17:10:24.930Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T17:11:51.498Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T17:11:53.405Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T17:11:53.405Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T17:11:53.405Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T17:11:53.405Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T17:12:19.726Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T17:12:20.431Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T17:12:20.431Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T17:12:20.432Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T17:12:20.432Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T17:22:48.666Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T17:22:49.605Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T17:22:49.605Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T17:22:49.605Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T17:22:49.605Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T17:22:50.124Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T17:22:50.809Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T17:22:50.809Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T17:22:50.810Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T17:22:50.810Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T17:23:06.545Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T17:23:07.233Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T17:23:07.234Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T17:23:07.234Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T17:23:07.234Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T17:23:53.085Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T17:23:54.090Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T17:23:54.091Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T17:23:54.091Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T17:23:54.091Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T17:26:58.580Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T17:27:04.412Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T17:27:04.413Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T17:27:04.413Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T17:27:04.413Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T17:29:33.446Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T17:29:34.283Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T17:29:34.283Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T17:29:34.283Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T17:29:34.283Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T18:51:16.169Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T18:51:17.040Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T18:51:17.041Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T18:51:17.041Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T18:51:17.041Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T18:51:17.450Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T18:51:18.168Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T18:51:18.168Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T18:51:18.168Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T18:51:18.169Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T18:51:28.649Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T18:51:29.363Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T18:51:29.363Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T18:51:29.364Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T18:51:29.364Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T18:51:29.947Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T18:51:30.665Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T18:51:30.665Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T18:51:30.665Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T18:51:30.666Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T18:51:46.733Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T18:51:47.433Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T18:51:47.433Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T18:51:47.433Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T18:51:47.433Z] [32minfo[39m: 🌍 Entorno: development
+[2025-07-07T23:49:08.106Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-07-07T23:49:08.968Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-07-07T23:49:08.968Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-07-07T23:49:08.968Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-07-07T23:49:08.968Z] [32minfo[39m: 🌍 Entorno: development
