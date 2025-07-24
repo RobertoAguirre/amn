@@ -1,8 +1,8 @@
 class AppConfig {
   // Configuración del servidor
-  static const String serverIp = '192.168.0.109';
-  static const int serverPort = 3000;
-  static const String baseUrl = 'http://$serverIp:$serverPort/api';
+  static const String serverIp = 'amn-pgrc.onrender.com';
+  static const int serverPort = 443;
+  static const String baseUrl = 'https://$serverIp/api';
   
   // Configuración de la app
   static const String appName = 'AMN Control de Calidad';

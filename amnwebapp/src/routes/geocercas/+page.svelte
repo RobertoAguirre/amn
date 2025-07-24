@@ -8,6 +8,8 @@
   let geocercas: any[] = [];
   let eliminando = false;
 
+  import { apiUrl } from '$lib/config';
+
   function cargarMarcadores(L: any) {
     // Limpiar marcadores previos
     map.eachLayer((layer: any) => {
@@ -18,7 +20,7 @@
     // Volver a cargar los drawnItems
     map.addLayer(drawnItems);
     // Mostrar ubicaciones de dispositivos (checador)
-    fetch('/api/checador/mvp')
+    fetch(apiUrl('/api/checador/mvp'))
       .then(r => r.json())
       .then(res => {
         if (res.data && Array.isArray(res.data)) {
@@ -68,7 +70,7 @@
   async function guardarGeocerca(geocerca: any) {
     saving = true;
     try {
-      const res = await fetch('/api/geocercas', {
+      const res = await fetch(apiUrl('/api/geocercas'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(geocerca)
@@ -90,7 +92,7 @@
 
   async function cargarGeocercas() {
     try {
-      const res = await fetch('/api/geocercas');
+      const res = await fetch(apiUrl('/api/geocercas'));
       const data = await res.json();
       if (data.data && Array.isArray(data.data)) {
         geocercas = data.data;
@@ -107,7 +109,7 @@
     
     eliminando = true;
     try {
-      const res = await fetch(`/api/geocercas/${id}`, {
+      const res = await fetch(apiUrl(`/api/geocercas/${id}`), {
         method: 'DELETE'
       });
       const data = await res.json();
@@ -128,7 +130,7 @@
 
   async function mostrarGeocercasGuardadas(L?: any) {
     try {
-      const res = await fetch('/api/geocercas');
+      const res = await fetch(apiUrl('/api/geocercas'));
       const data = await res.json();
       if (data.data && Array.isArray(data.data)) {
         // Limpiar geocercas previas del mapa
