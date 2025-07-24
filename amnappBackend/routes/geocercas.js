@@ -23,4 +23,20 @@ router.get('/', async (req, res) => {
   }
 });
 
+// DELETE /api/geocercas/:id - Eliminar geocerca por ID
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const geocerca = await Geocerca.findByIdAndDelete(id);
+    
+    if (!geocerca) {
+      return res.status(404).json({ error: true, message: 'Geocerca no encontrada' });
+    }
+    
+    res.json({ error: false, message: 'Geocerca eliminada exitosamente', data: geocerca });
+  } catch (error) {
+    res.status(500).json({ error: true, message: 'Error al eliminar geocerca', details: error.message });
+  }
+});
+
 module.exports = router; 

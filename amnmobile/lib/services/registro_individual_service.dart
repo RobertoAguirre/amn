@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import '../config/app_config.dart';
 import '../models/registro_individual.dart';
 
 class RegistroIndividualService {
@@ -8,7 +9,7 @@ class RegistroIndividualService {
   late Database _db;
   bool _initialized = false;
 
-  RegistroIndividualService([Dio? dio]) : _dio = dio ?? Dio(BaseOptions(baseUrl: 'http://192.168.0.106:3000/api')) {
+  RegistroIndividualService([Dio? dio]) : _dio = dio ?? Dio(BaseOptions(baseUrl: AppConfig.baseUrl)) {
     _initDatabase();
   }
 

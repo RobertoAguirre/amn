@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
 import '../services/checador_service.dart';
+import '../services/auth_service.dart';
 
 class ChecadorScreen extends StatefulWidget {
   const ChecadorScreen({super.key});
@@ -16,11 +17,11 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
   bool _initialized = false;
   bool _isSaving = false;
 
-  // Datos fijos para demo
-  final String empleadoId = 'E001';
-  final String empleadoNombre = 'Juan Pérez';
-  final String plantaId = 'P001';
-  final String plantaNombre = 'Planta Demo';
+  // Datos del usuario autenticado
+  String empleadoId = '';
+  String empleadoNombre = '';
+  String plantaId = '';
+  String plantaNombre = '';
 
   Future<Position?> _obtenerUbicacionConPermisoYTimeout(BuildContext context) async {
     LocationPermission permission = await Geolocator.checkPermission();
@@ -51,7 +52,34 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
   void initState() {
     super.initState();
     _initDatabase();
-    _registrarUbicacionAlAbrir();
+    _cargarDatosUsuario();
+  }
+
+  Future<void> _cargarDatosUsuario() async {
+    try {
+      final authService = AuthService();
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        setState(() {
+          empleadoId = user['numero_empleado'] ?? '';
+          empleadoNombre = user['nombre'] ?? '';
+          plantaId = 'P001'; // Por defecto
+          plantaNombre = 'Planta Demo'; // Por defecto
+        });
+        // Registrar ubicación después de cargar datos del usuario
+        _registrarUbicacionAlAbrir();
+      } else {
+        // Si no hay usuario autenticado, redirigir al login
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    }
   }
 
   Future<void> _initDatabase() async {
@@ -176,7 +204,21 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Checador de Actividades')),
+      appBar: AppBar(
+        title: const Text('Checador de Actividades'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              final authService = AuthService();
+              await authService.logout();
+              if (mounted) {
+                Navigator.pushReplacementNamed(context, '/login');
+              }
+            },
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(

@@ -36,16 +36,59 @@ const app = express();
 
 // Middleware
 app.use(helmet());
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting
+// Configuración mejorada de CORS para dispositivos móviles
+app.use(cors({
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como apps móviles)
+    if (!origin) return callback(null, true);
+    
+    // Permitir localhost y IPs de red local
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3000',
+      'http://192.168.0.109:5173',
+      'http://192.168.0.109:3000',
+      'capacitor://localhost',
+      'ionic://localhost'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      logger.warn(`CORS bloqueado para origin: ${origin}`);
+      callback(null, true); // Permitir temporalmente para pruebas
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+}));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Rate limiting más permisivo para apps móviles
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 200, // Aumentado para apps móviles
+  message: {
+    error: true,
+    message: 'Demasiadas requests, intente más tarde'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
+
 app.use(limiter);
+
+// Middleware para logging de requests
+app.use((req, res, next) => {
+  logger.info(`${req.method} ${req.path} - ${req.ip}`);
+  next();
+});
 
 // Conexión a MongoDB
 mongoose.connect(process.env.MONGODB_URI)
@@ -72,9 +115,19 @@ app.use('/api/geocercas', require('./routes/geocercas'));
 // Endpoint MVP para checador (ubicación de dispositivos)
 app.use('/api/checador', require('./routes/checador_mvp'));
 
+// Endpoint de salud para verificar que el servidor esté funcionando
+app.get('/api/health', (req, res) => {
+  res.json({
+    error: false,
+    message: 'Servidor funcionando correctamente',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // Manejo de errores
 app.use((err, req, res, next) => {
-  logger.error(err.stack);
+  logger.error(`Error en ${req.method} ${req.path}:`, err);
   res.status(500).json({
     error: true,
     message: process.env.NODE_ENV === 'production' 
@@ -83,7 +136,18 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Manejo de rutas no encontradas
+app.use('*', (req, res) => {
+  logger.warn(`Ruta no encontrada: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({
+    error: true,
+    message: 'Ruta no encontrada'
+  });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   logger.info(`🚀 Servidor corriendo en puerto ${PORT}`);
+  logger.info(`🌐 Accesible en: http://localhost:${PORT}`);
+  logger.info(`📱 Para dispositivos móviles: http://192.168.0.109:${PORT}`);
 }); 
