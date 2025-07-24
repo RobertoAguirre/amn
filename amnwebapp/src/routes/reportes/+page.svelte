@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { apiUrl } from '$lib/config';
   
   let eventos: any[] = [];
   let geocercas: any[] = [];
@@ -14,22 +15,22 @@
     loading = true;
     try {
       // Cargar eventos de checador
-      const eventosRes = await fetch('/api/checador/mvp');
+      const eventosRes = await fetch(apiUrl('/api/checador/mvp'));
       const eventosData = await eventosRes.json();
       eventos = eventosData.data || [];
 
       // Cargar eventos específicos de geocercas
-      const eventosGeocercaRes = await fetch('/api/checador/eventos-geocerca');
+      const eventosGeocercaRes = await fetch(apiUrl('/api/checador/eventos-geocerca'));
       const eventosGeocercaData = await eventosGeocercaRes.json();
       const eventosGeocerca = eventosGeocercaData.data || [];
 
       // Cargar geocercas
-      const geocercasRes = await fetch('/api/geocercas');
+      const geocercasRes = await fetch(apiUrl('/api/geocercas'));
       const geocercasData = await geocercasRes.json();
       geocercas = geocercasData.data || [];
 
       // Cargar estadísticas
-      const estadisticasRes = await fetch('/api/checador/estadisticas');
+      const estadisticasRes = await fetch(apiUrl('/api/checador/estadisticas'));
       const estadisticasData = await estadisticasRes.json();
       estadisticasGlobales = estadisticasData.data || {};
 

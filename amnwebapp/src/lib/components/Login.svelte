@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import { apiUrl } from '$lib/config';
   
   let isLogin = true;
   let isLoading = false;
@@ -21,7 +22,7 @@
     successMessage = '';
     
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+      const endpoint = isLogin ? apiUrl('/api/auth/login') : apiUrl('/api/auth/register');
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
