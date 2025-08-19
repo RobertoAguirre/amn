@@ -212,6 +212,10 @@ router.post('/mvp', async (req, res) => {
 router.get('/mvp', async (req, res) => {
   try {
     const eventos = await ChecadorEvento.find().sort({ fechaHora: -1 });
+    console.log(`📊 [Checador] Total eventos en BD: ${eventos.length}`);
+    if (eventos.length > 0) {
+      console.log(`📊 [Checador] Último evento: ${eventos[0].empleadoNombre} - ${eventos[0].tipoEvento} - ${eventos[0].fechaHora}`);
+    }
     res.json({ error: false, data: eventos });
   } catch (error) {
     res.status(500).json({ error: true, message: 'Error al obtener eventos', details: error.message });
@@ -429,10 +433,13 @@ router.get('/reporte-nomina', async (req, res) => {
       empleadoNombre 
     } = req.query;
 
+    console.log('📊 [Nómina] Solicitud recibida:', { fechaInicio, fechaFin, empleadoId, empleadoNombre });
+
     let filtro = {};
 
     // Filtro por rango de fechas (obligatorio)
     if (!fechaInicio || !fechaFin) {
+      console.log('❌ [Nómina] Fechas faltantes');
       return res.status(400).json({ 
         error: true, 
         message: 'Se requieren fechaInicio y fechaFin' 
@@ -444,6 +451,8 @@ router.get('/reporte-nomina', async (req, res) => {
       $lt: new Date(new Date(fechaFin).setDate(new Date(fechaFin).getDate() + 1))
     };
 
+    console.log('📊 [Nómina] Filtro de fechas:', filtro.fechaHora);
+
     // Filtro por empleado
     if (empleadoId) {
       filtro.empleadoId = empleadoId;
@@ -453,6 +462,8 @@ router.get('/reporte-nomina', async (req, res) => {
       filtro.empleadoNombre = { $regex: empleadoNombre, $options: 'i' };
     }
 
+    console.log('📊 [Nómina] Filtro final:', JSON.stringify(filtro, null, 2));
+
     // Obtener eventos relevantes para nómina
     const eventos = await ChecadorEvento.find({
       ...filtro,
@@ -460,6 +471,15 @@ router.get('/reporte-nomina', async (req, res) => {
         $in: ['entrada', 'salida', 'inicio_trabajo', 'fin_trabajo', 'comida', 'reanudar_trabajo'] 
       }
     }).sort({ fechaHora: 1 });
+
+    console.log('📊 [Nómina] Eventos encontrados:', eventos.length);
+    if (eventos.length > 0) {
+      console.log('📊 [Nómina] Primer evento:', {
+        empleado: eventos[0].empleadoNombre,
+        tipo: eventos[0].tipoEvento,
+        fecha: eventos[0].fechaHora
+      });
+    }
 
     // Agrupar por empleado
     const reportePorEmpleado = new Map();
@@ -544,6 +564,36 @@ router.get('/reporte-nomina', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: true, message: 'Error al generar reporte de nómina', details: error.message });
+  }
+});
+
+// GET /api/checador/test - Endpoint de prueba para verificar datos
+router.get('/test', async (req, res) => {
+  try {
+    const totalEventos = await ChecadorEvento.countDocuments();
+    const eventosRecientes = await ChecadorEvento.find()
+      .sort({ fechaHora: -1 })
+      .limit(5);
+    
+    const tiposEventos = await ChecadorEvento.distinct('tipoEvento');
+    const empleados = await ChecadorEvento.distinct('empleadoNombre');
+    
+    res.json({
+      error: false,
+      data: {
+        totalEventos,
+        tiposEventos,
+        empleados,
+        eventosRecientes: eventosRecientes.map(e => ({
+          empleado: e.empleadoNombre,
+          tipo: e.tipoEvento,
+          fecha: e.fechaHora,
+          planta: e.plantaNombre
+        }))
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: true, message: 'Error en test', details: error.message });
   }
 });
 

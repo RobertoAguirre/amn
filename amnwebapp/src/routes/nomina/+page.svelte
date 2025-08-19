@@ -11,29 +11,39 @@
 
   async function cargarReporteNomina() {
     if (!filtroFechaInicio || !filtroFechaFin) {
+      console.log('❌ [Nómina] Fechas faltantes');
       return;
     }
 
     loading = true;
     try {
+      console.log('🔄 [Nómina] Generando reporte...', { filtroFechaInicio, filtroFechaFin, filtroEmpleado });
+      
       const params = new URLSearchParams();
       params.append('fechaInicio', filtroFechaInicio);
       params.append('fechaFin', filtroFechaFin);
       if (filtroEmpleado) params.append('empleadoNombre', filtroEmpleado);
 
-      const res = await fetch(apiUrl(`/api/checador/reporte-nomina?${params}`));
+      const url = apiUrl(`/api/checador/reporte-nomina?${params}`);
+      console.log('🌐 [Nómina] URL:', url);
+
+      const res = await fetch(url);
       const data = await res.json();
       
+      console.log('📊 [Nómina] Respuesta:', data);
+      
       if (data.error) {
-        console.error('Error cargando reporte:', data.message);
+        console.error('❌ [Nómina] Error cargando reporte:', data.message);
         return;
       }
 
       reporteNomina = data.data || [];
       totalEmpleados = data.total || 0;
+      
+      console.log(`✅ [Nómina] Reporte generado: ${reporteNomina.length} empleados`);
 
     } catch (error) {
-      console.error('Error cargando reporte de nómina:', error);
+      console.error('❌ [Nómina] Error cargando reporte de nómina:', error);
     } finally {
       loading = false;
     }
