@@ -419,4 +419,132 @@ router.get('/eventos-filtrados', async (req, res) => {
   }
 });
 
+// GET /api/checador/reporte-nomina - Reporte de tiempo trabajado para nómina
+router.get('/reporte-nomina', async (req, res) => {
+  try {
+    const { 
+      fechaInicio, 
+      fechaFin, 
+      empleadoId, 
+      empleadoNombre 
+    } = req.query;
+
+    let filtro = {};
+
+    // Filtro por rango de fechas (obligatorio)
+    if (!fechaInicio || !fechaFin) {
+      return res.status(400).json({ 
+        error: true, 
+        message: 'Se requieren fechaInicio y fechaFin' 
+      });
+    }
+
+    filtro.fechaHora = {
+      $gte: new Date(fechaInicio),
+      $lt: new Date(new Date(fechaFin).setDate(new Date(fechaFin).getDate() + 1))
+    };
+
+    // Filtro por empleado
+    if (empleadoId) {
+      filtro.empleadoId = empleadoId;
+    }
+
+    if (empleadoNombre) {
+      filtro.empleadoNombre = { $regex: empleadoNombre, $options: 'i' };
+    }
+
+    // Obtener eventos relevantes para nómina
+    const eventos = await ChecadorEvento.find({
+      ...filtro,
+      tipoEvento: { 
+        $in: ['entrada', 'salida', 'inicio_trabajo', 'fin_trabajo', 'comida', 'reanudar_trabajo'] 
+      }
+    }).sort({ fechaHora: 1 });
+
+    // Agrupar por empleado
+    const reportePorEmpleado = new Map();
+
+    eventos.forEach(evento => {
+      if (!reportePorEmpleado.has(evento.empleadoId)) {
+        reportePorEmpleado.set(evento.empleadoId, {
+          empleadoId: evento.empleadoId,
+          empleadoNombre: evento.empleadoNombre,
+          eventos: [],
+          tiempoTrabajo: 0, // en minutos
+          tiempoComida: 0,  // en minutos
+          tiempoEnGeocerca: 0, // en minutos
+          ultimaEntrada: null,
+          ultimaSalida: null,
+          estadoActual: 'fuera'
+        });
+      }
+
+      const reporte = reportePorEmpleado.get(evento.empleadoId);
+      reporte.eventos.push(evento);
+
+      // Calcular tiempos
+      const fechaEvento = new Date(evento.fechaHora);
+
+      switch (evento.tipoEvento) {
+        case 'entrada':
+          reporte.ultimaEntrada = fechaEvento;
+          reporte.estadoActual = 'dentro';
+          break;
+        
+        case 'salida':
+          if (reporte.ultimaEntrada) {
+            const tiempoEnPlanta = (fechaEvento - reporte.ultimaEntrada) / (1000 * 60); // minutos
+            reporte.tiempoEnGeocerca += tiempoEnPlanta;
+          }
+          reporte.ultimaSalida = fechaEvento;
+          reporte.estadoActual = 'fuera';
+          break;
+        
+        case 'inicio_trabajo':
+          if (reporte.ultimaEntrada) {
+            const tiempoHastaInicio = (fechaEvento - reporte.ultimaEntrada) / (1000 * 60);
+            // Tiempo desde entrada hasta inicio de trabajo (tiempo de preparación)
+          }
+          break;
+        
+        case 'comida':
+          // Marcar inicio de comida
+          reporte.ultimaEntrada = fechaEvento;
+          break;
+        
+        case 'reanudar_trabajo':
+          if (reporte.ultimaEntrada) {
+            const tiempoComida = (fechaEvento - reporte.ultimaEntrada) / (1000 * 60);
+            reporte.tiempoComida += tiempoComida;
+          }
+          break;
+        
+        case 'fin_trabajo':
+          if (reporte.ultimaEntrada) {
+            const tiempoTrabajo = (fechaEvento - reporte.ultimaEntrada) / (1000 * 60);
+            reporte.tiempoTrabajo += tiempoTrabajo;
+          }
+          break;
+      }
+    });
+
+    // Convertir a array y formatear tiempos
+    const reporteFinal = Array.from(reportePorEmpleado.values()).map(reporte => ({
+      ...reporte,
+      tiempoTrabajoHoras: Math.round((reporte.tiempoTrabajo / 60) * 100) / 100,
+      tiempoComidaHoras: Math.round((reporte.tiempoComida / 60) * 100) / 100,
+      tiempoEnGeocercaHoras: Math.round((reporte.tiempoEnGeocerca / 60) * 100) / 100,
+      tiempoEfectivoHoras: Math.round(((reporte.tiempoTrabajo - reporte.tiempoComida) / 60) * 100) / 100
+    }));
+
+    res.json({
+      error: false,
+      data: reporteFinal,
+      total: reporteFinal.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: true, message: 'Error al generar reporte de nómina', details: error.message });
+  }
+});
+
 module.exports = router; 

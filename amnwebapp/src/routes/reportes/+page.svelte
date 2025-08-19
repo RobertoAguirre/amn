@@ -65,7 +65,7 @@
     ).length;
     
     return {
-      totalEventos: totalEventos,
+      totalEventos: estadisticasGlobales.totalEventos || totalEventos,
       eventosHoy: eventosHoy,
       dispositivosActivos: dispositivos.length,
       geocercasActivas: geocercas.length
