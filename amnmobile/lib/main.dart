@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'screens/login_screen.dart';
 import 'screens/checador_screen.dart';
+import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
 
 const Color amnYellow = Color(0xFFFFC600);
@@ -11,53 +11,6 @@ void main() {
   runApp(const MyApp());
 }
 
-class AuthWrapper extends StatefulWidget {
-  const AuthWrapper({super.key});
-
-  @override
-  State<AuthWrapper> createState() => _AuthWrapperState();
-}
-
-class _AuthWrapperState extends State<AuthWrapper> {
-  bool _isLoading = true;
-  bool _isAuthenticated = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkAuth();
-  }
-
-  Future<void> _checkAuth() async {
-    try {
-      final authService = AuthService();
-      final isAuth = await authService.isAuthenticated();
-      setState(() {
-        _isAuthenticated = isAuth;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isAuthenticated = false;
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    return _isAuthenticated ? const ChecadorScreen() : const LoginScreen();
-  }
-}
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -65,11 +18,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'AMN Control de Calidad',
-      home: const AuthWrapper(),
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/checador': (context) => const ChecadorScreen(),
-      },
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: amnYellow,
@@ -127,6 +75,44 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
+      home: const AuthWrapper(),
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/checador': (context) => const ChecadorScreen(),
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: AuthService().isAuthenticated(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        final isAuthenticated = snapshot.data ?? false;
+        
+        if (isAuthenticated) {
+          return const ChecadorScreen();
+        } else {
+          return const LoginScreen();
+        }
+      },
     );
   }
 }

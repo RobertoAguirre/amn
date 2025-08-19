@@ -74,6 +74,7 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
     _initDatabase();
     _cargarDatosUsuario();
     _iniciarTimerUbicacion();
+    _registrarUbicacionAlAbrir();
   }
 
   @override
@@ -87,6 +88,7 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
       Duration(seconds: AppConfig.locationIntervalSeconds),
       (timer) => _enviarUbicacionAutomatica(),
     );
+    print('🕐 [Checador] Timer de ubicación iniciado: cada ${AppConfig.locationIntervalSeconds} segundos');
   }
 
   Future<void> _enviarUbicacionAutomatica() async {
@@ -155,9 +157,10 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
           plantaId = 'PLANTA_001'; // Valor por defecto
           plantaNombre = 'Planta Principal'; // Valor por defecto
         });
+        print('👤 [Checador] Usuario cargado: $empleadoNombre ($empleadoId)');
       }
     } catch (e) {
-      print('Error cargando datos de usuario: $e');
+      print('❌ [Checador] Error cargando datos de usuario: $e');
     }
   }
 
@@ -184,6 +187,7 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
             sincronizado INTEGER NOT NULL DEFAULT 0
           )
         ''');
+        print('🗄️ [Checador] Base de datos SQLite creada');
       },
     );
     _initialized = true;
@@ -204,7 +208,7 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
       'plantaId': plantaId,
       'plantaNombre': plantaNombre,
       'tipoEvento': 'apertura_app',
-      'fechaHora': now.toIso8601String(),
+      'fechaHora': mexicoTime.toIso8601String(),
       'latitud': posicion.latitude,
       'longitud': posicion.longitude,
       'precision': posicion.accuracy,
@@ -218,23 +222,37 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
         final service = ChecadorService();
         await service.sincronizarEventos();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ubicación inicial enviada (precisión: ${posicion.accuracy.toStringAsFixed(1)}m)')),
+          SnackBar(
+            content: Text('📍 Ubicación enviada: ${posicion.latitude.toStringAsFixed(6)}, ${posicion.longitude.toStringAsFixed(6)}'),
+            backgroundColor: Colors.green,
+          ),
         );
-      } catch (_) {}
+        print('✅ [Checador] Ubicación inicial enviada y sincronizada');
+      } catch (e) {
+        print('❌ [Checador] Error sincronizando ubicación inicial: $e');
+      }
     }
   }
 
   Future<void> _registrarEvento(String tipoEvento) async {
-    setState(() => _isSaving = true);
+    if (_isSaving) return;
+    
+    setState(() {
+      _isSaving = true;
+    });
+
     try {
       final posicion = await _obtenerUbicacionConPermisoYTimeout(context);
       if (posicion == null) {
-        setState(() => _isSaving = false);
+        setState(() {
+          _isSaving = false;
+        });
         return;
       }
-      
-      // Usar hora local de México (UTC-6)
-      final now = DateTime.now().toUtc().add(const Duration(hours: -6));
+
+      // Usar hora local de México (UTC-6) con mejor manejo de zona horaria
+      final now = DateTime.now();
+      final mexicoTime = now.toUtc().add(const Duration(hours: -6));
       
       await _initDatabase();
       await _db.insert('eventos', {
@@ -249,50 +267,64 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
         'precision': posicion.accuracy,
         'sincronizado': 0,
       });
-      
-      _lastPosition = posicion;
-      
-      if (mounted) {
-        try {
-          final service = ChecadorService();
-          await service.sincronizarEventos();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Evento "$tipoEvento" enviado (precisión: ${posicion.accuracy.toStringAsFixed(1)}m)')),
-          );
-        } catch (_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Evento registrado localmente, pero no se pudo enviar')),
-          );
-        }
-      }
-    } catch (e) {
+
+      // Sincronizar inmediatamente
+      final service = ChecadorService();
+      await service.sincronizarEventos();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al registrar evento: $e')),
+          SnackBar(
+            content: Text('✅ $tipoEvento registrado correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+      
+      print('✅ [Checador] Evento "$tipoEvento" registrado y sincronizado');
+      
+    } catch (e) {
+      print('❌ [Checador] Error registrando evento: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
-      setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
-  Widget _buildButton(String label, Color color) {
+  Widget _buildButton(String text, Color color, String tipoEvento) {
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: ElevatedButton(
-          onPressed: _isSaving ? null : () => _registrarEvento(label),
+          onPressed: _isSaving ? null : () => _registrarEvento(tipoEvento),
           style: ElevatedButton.styleFrom(
             backgroundColor: color,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 20),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
           child: _isSaving
               ? const CircularProgressIndicator(color: Colors.white)
-              : Text(label, style: const TextStyle(fontSize: 16)),
+              : Text(
+                  text,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         ),
       ),
     );
@@ -302,72 +334,88 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Checador de Ubicación'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        title: const Text('Checador de Actividades'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              final authService = AuthService();
+              await authService.logout();
+              if (mounted) {
+                Navigator.of(context).pushReplacementNamed('/login');
+              }
+            },
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    const Icon(Icons.location_on, size: 48, color: Colors.blue),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Empleado: $empleadoNombre',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    Text('ID: $empleadoId', style: const TextStyle(fontSize: 14)),
-                    const SizedBox(height: 16),
-                    const Text(
-                      '📍 Envío automático cada ${AppConfig.locationIntervalSeconds} segundos\n'
-                      '📏 Solo si se mueve más de ${AppConfig.locationDistanceFilter} metros\n'
-                      '🎯 Precisión objetivo: ${AppConfig.desiredAccuracy} metros',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
+      body: Column(
+        children: [
+          // Información del usuario
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: Colors.grey[100],
+            child: Column(
+              children: [
+                Text(
+                  'Empleado: $empleadoNombre',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Eventos Manuales:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _buildButton('Inicio Trabajo', Colors.green),
-                _buildButton('Fin Trabajo', Colors.red),
+                const SizedBox(height: 4),
+                Text(
+                  'ID: $empleadoId',
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Planta: $plantaNombre',
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
               ],
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _buildButton('Pausa', Colors.orange),
-                _buildButton('Reanudar', Colors.blue),
-              ],
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _registrarUbicacionAlAbrir,
-              icon: const Icon(Icons.my_location),
-              label: const Text('Enviar Ubicación Ahora'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+          
+          // Botones de actividades
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildButton('Simular entrada a planta', Colors.blue, 'simular_entrada'),
+                  _buildButton('Inicio de trabajo', Colors.green, 'inicio_trabajo'),
+                  _buildButton('Comida', Colors.orange, 'comida'),
+                  _buildButton('Reanudar trabajo', Colors.teal, 'reanudar_trabajo'),
+                  _buildButton('Cierre', Colors.red, 'cierre'),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          
+          // Información de rastreo
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: Colors.blue[50],
+            child: Column(
+              children: [
+                const Text(
+                  '🕐 Rastreo Automático Activo',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Ubicación cada ${AppConfig.locationIntervalSeconds} segundos',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                Text(
+                  'Precisión: ${AppConfig.desiredAccuracy}m',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
-} 
+}
