@@ -5,6 +5,8 @@ import 'package:path/path.dart' as p;
 import 'dart:async';
 import '../services/checador_service.dart';
 import '../services/auth_service.dart';
+import '../services/background_location_service.dart';
+import '../services/real_background_service.dart';
 import '../config/app_config.dart';
 
 class ChecadorScreen extends StatefulWidget {
@@ -14,7 +16,7 @@ class ChecadorScreen extends StatefulWidget {
   State<ChecadorScreen> createState() => _ChecadorScreenState();
 }
 
-class _ChecadorScreenState extends State<ChecadorScreen> {
+class _ChecadorScreenState extends State<ChecadorScreen> with WidgetsBindingObserver {
   late Database _db;
   bool _initialized = false;
   bool _isSaving = false;
@@ -27,13 +29,13 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
   String plantaId = '';
   String plantaNombre = '';
 
-  Future<Position?> _obtenerUbicacionConPermisoYTimeout(BuildContext context) async {
+  Future<Position?> _obtenerUbicacionConPermisoYTimeout(BuildContext context, {bool silent = false}) async {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
     if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-      if (mounted) {
+      if (mounted && !silent) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Permiso de ubicación denegado. No se puede registrar ubicación.')),
         );
@@ -44,7 +46,7 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
     // Verificar si el GPS está habilitado
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      if (mounted) {
+      if (mounted && !silent) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Servicios de ubicación deshabilitados. Habilítalos en configuración.')),
         );
@@ -59,11 +61,12 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
         forceAndroidLocationManager: false, // Usar Google Play Services si está disponible
       );
     } catch (e) {
-      if (mounted) {
+      if (mounted && !silent) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al obtener ubicación: $e')),
         );
       }
+      print('❌ [Checador] Error silencioso al obtener ubicación: $e');
       return null;
     }
   }
@@ -71,14 +74,41 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initDatabase();
     _inicializarApp();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _locationTimer?.cancel();
+    // El servicio en segundo plano continuará funcionando
+    // No detenemos el servicio en segundo plano aquí
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    switch (state) {
+      case AppLifecycleState.resumed:
+        print('📱 [Checador] App resumida - continuando rastreo normal');
+        break;
+      case AppLifecycleState.inactive:
+        print('📱 [Checador] App inactiva - rastreo continúa en segundo plano');
+        break;
+      case AppLifecycleState.paused:
+        print('📱 [Checador] App pausada - rastreo continúa en segundo plano');
+        break;
+      case AppLifecycleState.detached:
+        print('📱 [Checador] App desconectada - rastreo puede continuar');
+        break;
+      case AppLifecycleState.hidden:
+        print('📱 [Checador] App oculta - rastreo continúa en segundo plano');
+        break;
+    }
   }
 
   Future<void> _inicializarApp() async {
@@ -87,11 +117,19 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
     // 1. Cargar datos del usuario
     await _cargarDatosUsuario();
     
-    // 2. Registrar ubicación inicial
+    // 2. Guardar datos para servicio en segundo plano
+    if (empleadoId.isNotEmpty && empleadoNombre.isNotEmpty) {
+      await BackgroundLocationService.saveUserData(empleadoId, empleadoNombre);
+    }
+    
+    // 3. Registrar ubicación inicial
     await _registrarUbicacionAlAbrir();
     
-    // 3. Iniciar timer de ubicación automática
+    // 4. Iniciar timer de ubicación automática (solo cuando la app está abierta)
     _iniciarTimerUbicacion();
+    
+    // 5. Iniciar rastreo real en segundo plano
+    await RealBackgroundService.startBackgroundTracking();
     
     print('✅ [Checador] Aplicación inicializada correctamente');
   }
@@ -108,7 +146,7 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
     if (!mounted) return;
     
     try {
-      final posicion = await _obtenerUbicacionConPermisoYTimeout(context);
+      final posicion = await _obtenerUbicacionConPermisoYTimeout(context, silent: true);
       if (posicion == null) return;
 
       // Verificar si se movió lo suficiente para enviar

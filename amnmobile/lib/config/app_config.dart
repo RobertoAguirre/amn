@@ -9,7 +9,7 @@ class AppConfig {
   static const String appVersion = '1.0.0';
   
   // Configuración de geolocalización
-  static const int locationTimeoutSeconds = 15;
+  static const int locationTimeoutSeconds = 10; // Reducido para evitar timeouts largos
   static const double defaultLatitude = 19.4326; // CDMX
   static const double defaultLongitude = -99.1332; // CDMX
   
