@@ -72,15 +72,28 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
   void initState() {
     super.initState();
     _initDatabase();
-    _cargarDatosUsuario();
-    _iniciarTimerUbicacion();
-    _registrarUbicacionAlAbrir();
+    _inicializarApp();
   }
 
   @override
   void dispose() {
     _locationTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _inicializarApp() async {
+    print('🚀 [Checador] Inicializando aplicación...');
+    
+    // 1. Cargar datos del usuario
+    await _cargarDatosUsuario();
+    
+    // 2. Registrar ubicación inicial
+    await _registrarUbicacionAlAbrir();
+    
+    // 3. Iniciar timer de ubicación automática
+    _iniciarTimerUbicacion();
+    
+    print('✅ [Checador] Aplicación inicializada correctamente');
   }
 
   void _iniciarTimerUbicacion() {
@@ -194,8 +207,15 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
   }
 
   Future<void> _registrarUbicacionAlAbrir() async {
+    print('📍 [Checador] Obteniendo ubicación inicial...');
+    
     final posicion = await _obtenerUbicacionConPermisoYTimeout(context);
-    if (posicion == null) return;
+    if (posicion == null) {
+      print('❌ [Checador] No se pudo obtener ubicación inicial');
+      return;
+    }
+    
+    print('📍 [Checador] Ubicación obtenida: ${posicion.latitude}, ${posicion.longitude} (precisión: ${posicion.accuracy}m)');
     
     // Usar hora local de México (UTC-6) con mejor manejo de zona horaria
     final now = DateTime.now();
@@ -217,19 +237,29 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
     
     _lastPosition = posicion;
     
-    if (mounted) {
-      try {
-        final service = ChecadorService();
-        await service.sincronizarEventos();
+          print('💾 [Checador] Evento guardado en SQLite, sincronizando...');
+      
+      if (mounted) {
+        try {
+          final service = ChecadorService();
+          await service.sincronizarEventos();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('📍 Ubicación enviada: ${posicion.latitude.toStringAsFixed(6)}, ${posicion.longitude.toStringAsFixed(6)}'),
             backgroundColor: Colors.green,
           ),
         );
-        print('✅ [Checador] Ubicación inicial enviada y sincronizada');
+        print('✅ [Checador] Ubicación inicial enviada y sincronizada exitosamente');
       } catch (e) {
         print('❌ [Checador] Error sincronizando ubicación inicial: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('⚠️ Error sincronizando: $e'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
       }
     }
   }

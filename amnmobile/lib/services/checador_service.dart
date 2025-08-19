@@ -22,15 +22,19 @@ class ChecadorService {
     // Agregar interceptor para logging
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
-        print('🌐 [ChecadorService] Request: ${options.method} ${options.path}');
+        print('🌐 [ChecadorService] Request: ${options.method} ${options.baseUrl}${options.path}');
+        print('🌐 [ChecadorService] Data: ${options.data}');
         handler.next(options);
       },
       onResponse: (response, handler) {
         print('✅ [ChecadorService] Response: ${response.statusCode}');
+        print('✅ [ChecadorService] Response data: ${response.data}');
         handler.next(response);
       },
       onError: (error, handler) {
         print('❌ [ChecadorService] Error: ${error.message}');
+        print('❌ [ChecadorService] Error type: ${error.type}');
+        print('❌ [ChecadorService] Error response: ${error.response?.data}');
         handler.next(error);
       },
     ));
@@ -42,10 +46,10 @@ class ChecadorService {
     if (_initialized) return;
     try {
       final dbPath = await getDatabasesPath();
-      final path = join(dbPath, 'checador.db');
+      final path = join(dbPath, AppConfig.databaseName);
       _db = await openDatabase(
         path,
-        version: 1,
+        version: AppConfig.databaseVersion,
         onCreate: (db, version) async {
           await db.execute('''
             CREATE TABLE eventos(
@@ -58,6 +62,7 @@ class ChecadorService {
               fechaHora TEXT,
               latitud REAL,
               longitud REAL,
+              precision REAL,
               sincronizado INTEGER
             )
           ''');
@@ -131,6 +136,7 @@ class ChecadorService {
             'fechaHora': evento['fechaHora'],
             'latitud': evento['latitud'],
             'longitud': evento['longitud'],
+            'precision': evento['precision'],
           });
           
           if (response.statusCode == 201) {
