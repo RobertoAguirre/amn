@@ -27,13 +27,32 @@
       const url = apiUrl(`/api/checador/reporte-nomina?${params}`);
       console.log('🌐 [Nómina] URL:', url);
 
-      const res = await fetch(url);
-      const data = await res.json();
+      // Agregar timeout y mejor manejo de errores
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      console.log('📡 [Nómina] Status:', res.status, res.statusText);
       
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
       console.log('📊 [Nómina] Respuesta:', data);
       
       if (data.error) {
-        console.error('❌ [Nómina] Error cargando reporte:', data.message);
+        console.error('❌ [Nómina] Error del servidor:', data.message);
         return;
       }
 
@@ -42,8 +61,11 @@
       
       console.log(`✅ [Nómina] Reporte generado: ${reporteNomina.length} empleados`);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [Nómina] Error cargando reporte de nómina:', error);
+      if (error.name === 'AbortError') {
+        console.error('❌ [Nómina] Timeout - la petición tardó demasiado');
+      }
     } finally {
       loading = false;
     }
@@ -76,6 +98,23 @@
     return reporteNomina.reduce((total, empleado) => total + empleado.tiempoComidaHoras, 0);
   }
 
+  async function probarConexion() {
+    try {
+      console.log('🧪 [Nómina] Probando conexión...');
+      const url = apiUrl('/api/checador/test');
+      console.log('🌐 [Nómina] URL de prueba:', url);
+      
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      console.log('✅ [Nómina] Conexión exitosa:', data);
+      alert(`Conexión exitosa! Total eventos: ${data.data.totalEventos}`);
+    } catch (error: any) {
+      console.error('❌ [Nómina] Error de conexión:', error);
+      alert(`Error de conexión: ${error.message}`);
+    }
+  }
+
   onMount(() => {
     // Establecer fechas por defecto (hoy)
     const hoy = new Date();
@@ -87,13 +126,21 @@
 <div class="p-6">
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold">Reporte de Nómina</h1>
-    <button 
-      class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-      on:click={cargarReporteNomina}
-      disabled={loading || !filtroFechaInicio || !filtroFechaFin}
-    >
-      {loading ? 'Cargando...' : 'Generar Reporte'}
-    </button>
+    <div class="flex space-x-2">
+      <button 
+        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        on:click={probarConexion}
+      >
+        Probar Conexión
+      </button>
+      <button 
+        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        on:click={cargarReporteNomina}
+        disabled={loading || !filtroFechaInicio || !filtroFechaFin}
+      >
+        {loading ? 'Cargando...' : 'Generar Reporte'}
+      </button>
+    </div>
   </div>
 
   <!-- Filtros -->
