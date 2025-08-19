@@ -9,9 +9,14 @@ class AppConfig {
   static const String appVersion = '1.0.0';
   
   // Configuración de geolocalización
-  static const int locationTimeoutSeconds = 10;
+  static const int locationTimeoutSeconds = 15;
   static const double defaultLatitude = 19.4326; // CDMX
   static const double defaultLongitude = -99.1332; // CDMX
+  
+  // Configuración de precisión GPS - OPTIMIZADA
+  static const double desiredAccuracy = 3.0; // metros - más precisa
+  static const int locationIntervalSeconds = 15; // Enviar ubicación cada 15 segundos - más frecuente
+  static const int locationDistanceFilter = 5; // metros - solo enviar si se movió más de 5m - más sensible
   
   // Configuración de sincronización
   static const int syncIntervalSeconds = 30;

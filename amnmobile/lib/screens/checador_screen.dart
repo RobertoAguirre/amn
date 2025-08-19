@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
+import 'dart:async';
 import '../services/checador_service.dart';
 import '../services/auth_service.dart';
+import '../config/app_config.dart';
 
 class ChecadorScreen extends StatefulWidget {
   const ChecadorScreen({super.key});
@@ -16,6 +18,8 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
   late Database _db;
   bool _initialized = false;
   bool _isSaving = false;
+  Timer? _locationTimer;
+  Position? _lastPosition;
 
   // Datos del usuario autenticado
   String empleadoId = '';
@@ -36,8 +40,24 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
       }
       return null;
     }
+    
+    // Verificar si el GPS está habilitado
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Servicios de ubicación deshabilitados. Habilítalos en configuración.')),
+        );
+      }
+      return null;
+    }
+    
     try {
-      return await Geolocator.getCurrentPosition().timeout(const Duration(seconds: 10));
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best, // Máxima precisión
+        timeLimit: Duration(seconds: AppConfig.locationTimeoutSeconds),
+        forceAndroidLocationManager: false, // Usar Google Play Services si está disponible
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -53,6 +73,75 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
     super.initState();
     _initDatabase();
     _cargarDatosUsuario();
+    _iniciarTimerUbicacion();
+  }
+
+  @override
+  void dispose() {
+    _locationTimer?.cancel();
+    super.dispose();
+  }
+
+  void _iniciarTimerUbicacion() {
+    _locationTimer = Timer.periodic(
+      Duration(seconds: AppConfig.locationIntervalSeconds),
+      (timer) => _enviarUbicacionAutomatica(),
+    );
+  }
+
+  Future<void> _enviarUbicacionAutomatica() async {
+    if (!mounted) return;
+    
+    try {
+      final posicion = await _obtenerUbicacionConPermisoYTimeout(context);
+      if (posicion == null) return;
+
+      // Verificar si se movió lo suficiente para enviar
+      if (_lastPosition != null) {
+        final distancia = Geolocator.distanceBetween(
+          _lastPosition!.latitude,
+          _lastPosition!.longitude,
+          posicion.latitude,
+          posicion.longitude,
+        );
+        
+        if (distancia < AppConfig.locationDistanceFilter) {
+          print('📍 [Checador] Dispositivo no se movió lo suficiente (${distancia.toStringAsFixed(1)}m < ${AppConfig.locationDistanceFilter}m)');
+          return;
+        }
+      }
+
+      _lastPosition = posicion;
+      
+      // Usar hora local de México (UTC-6) con mejor manejo de zona horaria
+      final now = DateTime.now();
+      final mexicoTime = now.toUtc().add(const Duration(hours: -6));
+      
+      await _initDatabase();
+      await _db.insert('eventos', {
+        'empleadoId': empleadoId,
+        'empleadoNombre': empleadoNombre,
+        'plantaId': plantaId,
+        'plantaNombre': plantaNombre,
+        'tipoEvento': 'ubicacion',
+        'fechaHora': mexicoTime.toIso8601String(),
+        'latitud': posicion.latitude,
+        'longitud': posicion.longitude,
+        'precision': posicion.accuracy,
+        'sincronizado': 0,
+      });
+
+      // Sincronizar inmediatamente
+      final service = ChecadorService();
+      await service.sincronizarEventos();
+      
+      print('📍 [Checador] Ubicación automática enviada: ${posicion.latitude}, ${posicion.longitude} (precisión: ${posicion.accuracy}m)');
+      print('🕐 [Checador] Hora local México: ${mexicoTime.toLocal()}');
+      print('🔄 [Checador] Sincronización iniciada...');
+      
+    } catch (e) {
+      print('❌ [Checador] Error en envío automático: $e');
+    }
   }
 
   Future<void> _cargarDatosUsuario() async {
@@ -61,47 +150,38 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
       final user = await authService.getCurrentUser();
       if (user != null) {
         setState(() {
-          empleadoId = user['numero_empleado'] ?? '';
-          empleadoNombre = user['nombre'] ?? '';
-          plantaId = 'P001'; // Por defecto
-          plantaNombre = 'Planta Demo'; // Por defecto
+          empleadoId = user.numeroEmpleado;
+          empleadoNombre = user.nombre;
+          plantaId = 'PLANTA_001'; // Valor por defecto
+          plantaNombre = 'Planta Principal'; // Valor por defecto
         });
-        // Registrar ubicación después de cargar datos del usuario
-        _registrarUbicacionAlAbrir();
-      } else {
-        // Si no hay usuario autenticado, redirigir al login
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/login');
-        }
       }
     } catch (e) {
-      print('Error cargando datos del usuario: $e');
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
+      print('Error cargando datos de usuario: $e');
     }
   }
 
   Future<void> _initDatabase() async {
     if (_initialized) return;
     final dbPath = await getDatabasesPath();
-    final path = p.join(dbPath, 'checador.db');
+    final path = p.join(dbPath, AppConfig.databaseName);
     _db = await openDatabase(
       path,
-      version: 1,
+      version: AppConfig.databaseVersion,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE eventos(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            empleadoId TEXT,
-            empleadoNombre TEXT,
+            empleadoId TEXT NOT NULL,
+            empleadoNombre TEXT NOT NULL,
             plantaId TEXT,
             plantaNombre TEXT,
-            tipoEvento TEXT,
-            fechaHora TEXT,
-            latitud REAL,
-            longitud REAL,
-            sincronizado INTEGER
+            tipoEvento TEXT NOT NULL,
+            fechaHora TEXT NOT NULL,
+            latitud REAL NOT NULL,
+            longitud REAL NOT NULL,
+            precision REAL,
+            sincronizado INTEGER NOT NULL DEFAULT 0
           )
         ''');
       },
@@ -112,25 +192,33 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
   Future<void> _registrarUbicacionAlAbrir() async {
     final posicion = await _obtenerUbicacionConPermisoYTimeout(context);
     if (posicion == null) return;
+    
+    // Usar hora local de México (UTC-6) con mejor manejo de zona horaria
     final now = DateTime.now();
+    final mexicoTime = now.toUtc().add(const Duration(hours: -6));
+    
     await _initDatabase();
     await _db.insert('eventos', {
       'empleadoId': empleadoId,
       'empleadoNombre': empleadoNombre,
       'plantaId': plantaId,
       'plantaNombre': plantaNombre,
-      'tipoEvento': 'Ubicación automática',
+      'tipoEvento': 'apertura_app',
       'fechaHora': now.toIso8601String(),
       'latitud': posicion.latitude,
       'longitud': posicion.longitude,
+      'precision': posicion.accuracy,
       'sincronizado': 0,
     });
+    
+    _lastPosition = posicion;
+    
     if (mounted) {
       try {
         final service = ChecadorService();
         await service.sincronizarEventos();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ubicación enviada')),
+          SnackBar(content: Text('Ubicación inicial enviada (precisión: ${posicion.accuracy.toStringAsFixed(1)}m)')),
         );
       } catch (_) {}
     }
@@ -144,7 +232,10 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
         setState(() => _isSaving = false);
         return;
       }
-      final now = DateTime.now();
+      
+      // Usar hora local de México (UTC-6)
+      final now = DateTime.now().toUtc().add(const Duration(hours: -6));
+      
       await _initDatabase();
       await _db.insert('eventos', {
         'empleadoId': empleadoId,
@@ -152,17 +243,21 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
         'plantaId': plantaId,
         'plantaNombre': plantaNombre,
         'tipoEvento': tipoEvento,
-        'fechaHora': now.toIso8601String(),
+        'fechaHora': mexicoTime.toIso8601String(),
         'latitud': posicion.latitude,
         'longitud': posicion.longitude,
+        'precision': posicion.accuracy,
         'sincronizado': 0,
       });
+      
+      _lastPosition = posicion;
+      
       if (mounted) {
         try {
           final service = ChecadorService();
           await service.sincronizarEventos();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Evento "$tipoEvento" enviado')),
+            SnackBar(content: Text('Evento "$tipoEvento" enviado (precisión: ${posicion.accuracy.toStringAsFixed(1)}m)')),
           );
         } catch (_) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -182,20 +277,22 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
   }
 
   Widget _buildButton(String label, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: SizedBox(
-        width: double.infinity,
-        height: 60,
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
         child: ElevatedButton(
+          onPressed: _isSaving ? null : () => _registrarEvento(label),
           style: ElevatedButton.styleFrom(
             backgroundColor: color,
             foregroundColor: Colors.white,
-            textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
-          onPressed: _isSaving ? null : () => _registrarEvento(label),
-          child: Text(label),
+          child: _isSaving
+              ? const CircularProgressIndicator(color: Colors.white)
+              : Text(label, style: const TextStyle(fontSize: 16)),
         ),
       ),
     );
@@ -205,30 +302,69 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Checador de Actividades'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final authService = AuthService();
-              await authService.logout();
-              if (mounted) {
-                Navigator.pushReplacementNamed(context, '/login');
-              }
-            },
-          ),
-        ],
+        title: const Text('Checador de Ubicación'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildButton('Simular entrada a planta', Colors.blueGrey),
-            _buildButton('Inicio de trabajo', Colors.green),
-            _buildButton('Comida', Colors.orange),
-            _buildButton('Reanudar trabajo', Colors.teal),
-            _buildButton('Cierre', Colors.red),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    const Icon(Icons.location_on, size: 48, color: Colors.blue),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Empleado: $empleadoNombre',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text('ID: $empleadoId', style: const TextStyle(fontSize: 14)),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '📍 Envío automático cada ${AppConfig.locationIntervalSeconds} segundos\n'
+                      '📏 Solo si se mueve más de ${AppConfig.locationDistanceFilter} metros\n'
+                      '🎯 Precisión objetivo: ${AppConfig.desiredAccuracy} metros',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Eventos Manuales:',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _buildButton('Inicio Trabajo', Colors.green),
+                _buildButton('Fin Trabajo', Colors.red),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildButton('Pausa', Colors.orange),
+                _buildButton('Reanudar', Colors.blue),
+              ],
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _registrarUbicacionAlAbrir,
+              icon: const Icon(Icons.my_location),
+              label: const Text('Enviar Ubicación Ahora'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
           ],
         ),
       ),
