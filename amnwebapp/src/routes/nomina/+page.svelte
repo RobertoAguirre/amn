@@ -22,6 +22,7 @@
 
     console.log('✅ [Nómina] Fechas válidas, iniciando carga...');
     loading = true;
+    console.log('🔄 [Nómina] Estado loading cambiado a true');
     errorMessage = '';
     try {
       console.log('🔄 [Nómina] Generando reporte...', { filtroFechaInicio, filtroFechaFin, filtroEmpleado });
@@ -74,6 +75,8 @@
       if (reporteNomina.length === 0) {
         errorMessage = 'No hay eventos registrados en las fechas seleccionadas';
       }
+      
+      console.log('✅ [Nómina] Carga completada exitosamente');
 
     } catch (error: any) {
       console.error('❌ [Nómina] Error cargando reporte de nómina:', error);
@@ -85,6 +88,7 @@
       }
     } finally {
       loading = false;
+      console.log('🔄 [Nómina] Estado loading cambiado a false');
     }
   }
 
@@ -257,7 +261,6 @@
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Empleado</th>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Estado</th>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Tiempo en Geocerca</th>
-              <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Tiempo Trabajo</th>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Tiempo Comida</th>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Tiempo Efectivo</th>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Último Evento</th>
@@ -281,9 +284,6 @@
                   {empleado.tiempoEnGeocercaHoras.toFixed(2)} hrs
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-900">
-                  {empleado.tiempoTrabajoHoras.toFixed(2)} hrs
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-900">
                   {empleado.tiempoComidaHoras.toFixed(2)} hrs
                 </td>
                 <td class="px-4 py-3">
@@ -294,7 +294,7 @@
                 <td class="px-4 py-3 text-sm text-gray-900">
                   {#if empleado.eventos.length > 0}
                     <div>
-                      <p>{empleado.eventos[empleado.eventos.length - 1].tipoEvento}</p>
+                      <p class="text-xs font-medium">{empleado.eventos[empleado.eventos.length - 1].tipoEvento}</p>
                       <p class="text-xs text-gray-500">
                         {formatearFecha(empleado.eventos[empleado.eventos.length - 1].fechaHora)}
                       </p>
