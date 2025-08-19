@@ -152,8 +152,8 @@ class _ChecadorScreenState extends State<ChecadorScreen> {
       final user = await authService.getCurrentUser();
       if (user != null) {
         setState(() {
-          empleadoId = user.numeroEmpleado;
-          empleadoNombre = user.nombre;
+          empleadoId = user['numero_empleado'] ?? '';
+          empleadoNombre = user['nombre'] ?? '';
           plantaId = 'PLANTA_001'; // Valor por defecto
           plantaNombre = 'Planta Principal'; // Valor por defecto
         });
