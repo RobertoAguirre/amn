@@ -3,7 +3,7 @@
   import { apiUrl } from '$lib/config';
   
   let reporteNomina: any[] = [];
-  let loading = true;
+  let loading = false;
   let filtroFechaInicio = '';
   let filtroFechaFin = '';
   let filtroEmpleado = '';
@@ -12,12 +12,15 @@
 
   async function cargarReporteNomina() {
     console.log('🚀 [Nómina] Función iniciada');
+    console.log('📅 [Nómina] Fechas:', { filtroFechaInicio, filtroFechaFin });
     
     if (!filtroFechaInicio || !filtroFechaFin) {
       console.log('❌ [Nómina] Fechas faltantes');
+      alert('Por favor selecciona las fechas de inicio y fin');
       return;
     }
 
+    console.log('✅ [Nómina] Fechas válidas, iniciando carga...');
     loading = true;
     errorMessage = '';
     try {
@@ -59,6 +62,7 @@
       
       if (data.error) {
         console.error('❌ [Nómina] Error del servidor:', data.message);
+        errorMessage = `Error del servidor: ${data.message}`;
         return;
       }
 
@@ -66,6 +70,10 @@
       totalEmpleados = data.total || 0;
       
       console.log(`✅ [Nómina] Reporte generado: ${reporteNomina.length} empleados`);
+      
+      if (reporteNomina.length === 0) {
+        errorMessage = 'No hay eventos registrados en las fechas seleccionadas';
+      }
 
     } catch (error: any) {
       console.error('❌ [Nómina] Error cargando reporte de nómina:', error);
@@ -97,6 +105,7 @@
     filtroEmpleado = '';
     reporteNomina = [];
     totalEmpleados = 0;
+    errorMessage = '';
   }
 
   function obtenerTotalTiempoEfectivo() {
@@ -130,10 +139,12 @@
   }
 
   onMount(() => {
+    console.log('🏠 [Nómina] Página cargada');
     // Establecer fechas por defecto (hoy)
     const hoy = new Date();
     filtroFechaInicio = hoy.toISOString().split('T')[0];
     filtroFechaFin = hoy.toISOString().split('T')[0];
+    console.log('📅 [Nómina] Fechas establecidas:', { filtroFechaInicio, filtroFechaFin });
   });
 </script>
 
@@ -155,7 +166,10 @@
       </button>
       <button 
         class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-        on:click={cargarReporteNomina}
+        on:click={() => {
+          console.log('🎯 [Nómina] Botón Generar Reporte clickeado!');
+          cargarReporteNomina();
+        }}
         disabled={loading}
       >
         {loading ? 'Cargando...' : 'Generar Reporte'}
@@ -318,20 +332,36 @@
       <p class="text-gray-500">Generando reporte de nómina...</p>
     </div>
   {:else if errorMessage}
-    <div class="bg-red-50 border border-red-200 p-4 rounded-lg">
+    <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
       <div class="flex">
         <div class="flex-shrink-0">
-          <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
           </svg>
         </div>
         <div class="ml-3">
-          <h3 class="text-sm font-medium text-red-800">Error al generar reporte</h3>
-          <div class="mt-2 text-sm text-red-700">
+          <h3 class="text-sm font-medium text-yellow-800">
+            {errorMessage.includes('Error') ? 'Error al generar reporte' : 'Sin datos disponibles'}
+          </h3>
+          <div class="mt-2 text-sm text-yellow-700">
             <p>{errorMessage}</p>
+            {#if !errorMessage.includes('Error')}
+              <p class="mt-2 text-xs">Intenta con un rango de fechas diferente o verifica que haya eventos registrados.</p>
+            {/if}
           </div>
         </div>
       </div>
     </div>
+  {:else if reporteNomina.length === 0 && !loading}
+    <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg text-center">
+      <div class="text-blue-500 mb-2">
+        <svg class="mx-auto h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <h3 class="text-sm font-medium text-blue-800">Listo para generar reporte</h3>
+      <p class="text-sm text-blue-700 mt-1">Selecciona las fechas y haz clic en "Generar Reporte" para ver los datos de nómina.</p>
+    </div>
   {/if}
 </div>
+
