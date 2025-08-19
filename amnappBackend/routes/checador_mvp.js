@@ -451,8 +451,6 @@ router.get('/reporte-nomina', async (req, res) => {
       $lt: new Date(new Date(fechaFin).setDate(new Date(fechaFin).getDate() + 1))
     };
 
-    console.log('📊 [Nómina] Filtro de fechas:', filtro.fechaHora);
-
     // Filtro por empleado
     if (empleadoId) {
       filtro.empleadoId = empleadoId;
@@ -464,22 +462,10 @@ router.get('/reporte-nomina', async (req, res) => {
 
     console.log('📊 [Nómina] Filtro final:', JSON.stringify(filtro, null, 2));
 
-    // Obtener eventos relevantes para nómina
-    const eventos = await ChecadorEvento.find({
-      ...filtro,
-      tipoEvento: { 
-        $in: ['entrada', 'salida', 'inicio_trabajo', 'fin_trabajo', 'comida', 'reanudar_trabajo'] 
-      }
-    }).sort({ fechaHora: 1 });
+    // Obtener TODOS los eventos del período (sin filtrar por tipo)
+    const eventos = await ChecadorEvento.find(filtro).sort({ fechaHora: 1 });
 
     console.log('📊 [Nómina] Eventos encontrados:', eventos.length);
-    if (eventos.length > 0) {
-      console.log('📊 [Nómina] Primer evento:', {
-        empleado: eventos[0].empleadoNombre,
-        tipo: eventos[0].tipoEvento,
-        fecha: eventos[0].fechaHora
-      });
-    }
 
     // Agrupar por empleado
     const reportePorEmpleado = new Map();
@@ -490,11 +476,8 @@ router.get('/reporte-nomina', async (req, res) => {
           empleadoId: evento.empleadoId,
           empleadoNombre: evento.empleadoNombre,
           eventos: [],
-          tiempoTrabajo: 0, // en minutos
-          tiempoComida: 0,  // en minutos
           tiempoEnGeocerca: 0, // en minutos
-          ultimaEntrada: null,
-          ultimaSalida: null,
+          tiempoComida: 0,     // en minutos
           estadoActual: 'fuera'
         });
       }
@@ -502,60 +485,61 @@ router.get('/reporte-nomina', async (req, res) => {
       const reporte = reportePorEmpleado.get(evento.empleadoId);
       reporte.eventos.push(evento);
 
-      // Calcular tiempos
-      const fechaEvento = new Date(evento.fechaHora);
-
-      switch (evento.tipoEvento) {
-        case 'entrada':
-          reporte.ultimaEntrada = fechaEvento;
-          reporte.estadoActual = 'dentro';
-          break;
-        
-        case 'salida':
-          if (reporte.ultimaEntrada) {
-            const tiempoEnPlanta = (fechaEvento - reporte.ultimaEntrada) / (1000 * 60); // minutos
-            reporte.tiempoEnGeocerca += tiempoEnPlanta;
-          }
-          reporte.ultimaSalida = fechaEvento;
-          reporte.estadoActual = 'fuera';
-          break;
-        
-        case 'inicio_trabajo':
-          if (reporte.ultimaEntrada) {
-            const tiempoHastaInicio = (fechaEvento - reporte.ultimaEntrada) / (1000 * 60);
-            // Tiempo desde entrada hasta inicio de trabajo (tiempo de preparación)
-          }
-          break;
-        
-        case 'comida':
-          // Marcar inicio de comida
-          reporte.ultimaEntrada = fechaEvento;
-          break;
-        
-        case 'reanudar_trabajo':
-          if (reporte.ultimaEntrada) {
-            const tiempoComida = (fechaEvento - reporte.ultimaEntrada) / (1000 * 60);
-            reporte.tiempoComida += tiempoComida;
-          }
-          break;
-        
-        case 'fin_trabajo':
-          if (reporte.ultimaEntrada) {
-            const tiempoTrabajo = (fechaEvento - reporte.ultimaEntrada) / (1000 * 60);
-            reporte.tiempoTrabajo += tiempoTrabajo;
-          }
-          break;
+      // Determinar estado actual basado en el último evento
+      if (evento.tipoEvento === 'entrada' || evento.tipoEvento === 'dentro') {
+        reporte.estadoActual = 'dentro';
+      } else if (evento.tipoEvento === 'salida' || evento.tipoEvento === 'fuera') {
+        reporte.estadoActual = 'fuera';
       }
     });
 
-    // Convertir a array y formatear tiempos
-    const reporteFinal = Array.from(reportePorEmpleado.values()).map(reporte => ({
-      ...reporte,
-      tiempoTrabajoHoras: Math.round((reporte.tiempoTrabajo / 60) * 100) / 100,
-      tiempoComidaHoras: Math.round((reporte.tiempoComida / 60) * 100) / 100,
-      tiempoEnGeocercaHoras: Math.round((reporte.tiempoEnGeocerca / 60) * 100) / 100,
-      tiempoEfectivoHoras: Math.round(((reporte.tiempoTrabajo - reporte.tiempoComida) / 60) * 100) / 100
-    }));
+    // Calcular tiempos para cada empleado
+    const reporteFinal = Array.from(reportePorEmpleado.values()).map(reporte => {
+      let tiempoEnGeocerca = 0;
+      let tiempoComida = 0;
+      let inicioComida = null;
+
+      // Recorrer eventos en orden cronológico
+      for (let i = 0; i < reporte.eventos.length; i++) {
+        const evento = reporte.eventos[i];
+        const fechaEvento = new Date(evento.fechaHora);
+
+        switch (evento.tipoEvento) {
+          case 'entrada':
+            // Buscar la siguiente salida
+            for (let j = i + 1; j < reporte.eventos.length; j++) {
+              const siguienteEvento = reporte.eventos[j];
+              if (siguienteEvento.tipoEvento === 'salida') {
+                const tiempoEnPlanta = (new Date(siguienteEvento.fechaHora) - fechaEvento) / (1000 * 60);
+                tiempoEnGeocerca += tiempoEnPlanta;
+                break;
+              }
+            }
+            break;
+
+          case 'comida':
+            inicioComida = fechaEvento;
+            break;
+
+          case 'reanudar_trabajo':
+            if (inicioComida) {
+              const tiempoComidaPeriodo = (fechaEvento - inicioComida) / (1000 * 60);
+              tiempoComida += tiempoComidaPeriodo;
+              inicioComida = null;
+            }
+            break;
+        }
+      }
+
+      return {
+        ...reporte,
+        tiempoEnGeocercaHoras: Math.round((tiempoEnGeocerca / 60) * 100) / 100,
+        tiempoComidaHoras: Math.round((tiempoComida / 60) * 100) / 100,
+        tiempoEfectivoHoras: Math.round(((tiempoEnGeocerca - tiempoComida) / 60) * 100) / 100
+      };
+    });
+
+    console.log('✅ [Nómina] Reporte generado exitosamente');
 
     res.json({
       error: false,
@@ -563,6 +547,7 @@ router.get('/reporte-nomina', async (req, res) => {
       total: reporteFinal.length
     });
   } catch (error) {
+    console.error('❌ [Nómina] Error:', error);
     res.status(500).json({ error: true, message: 'Error al generar reporte de nómina', details: error.message });
   }
 });
