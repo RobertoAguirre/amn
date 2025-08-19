@@ -251,14 +251,26 @@ router.get('/eventos-geocerca', async (req, res) => {
 // GET /api/checador/estadisticas - Estadísticas de eventos
 router.get('/estadisticas', async (req, res) => {
   try {
-    const { fecha } = req.query;
+    const { fecha, fechaInicio, fechaFin } = req.query;
     let filtroFecha = {};
     
     if (fecha) {
+      // Filtro por fecha específica
       const fechaInicio = new Date(fecha);
       const fechaFin = new Date(fecha);
       fechaFin.setDate(fechaFin.getDate() + 1);
       filtroFecha = { fechaHora: { $gte: fechaInicio, $lt: fechaFin } };
+    } else if (fechaInicio || fechaFin) {
+      // Filtro por rango de fechas
+      filtroFecha.fechaHora = {};
+      if (fechaInicio) {
+        filtroFecha.fechaHora.$gte = new Date(fechaInicio);
+      }
+      if (fechaFin) {
+        const fechaFinAjustada = new Date(fechaFin);
+        fechaFinAjustada.setDate(fechaFinAjustada.getDate() + 1);
+        filtroFecha.fechaHora.$lt = fechaFinAjustada;
+      }
     }
     
     const totalEventos = await ChecadorEvento.countDocuments(filtroFecha);
@@ -277,6 +289,133 @@ router.get('/estadisticas', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: true, message: 'Error al obtener estadísticas', details: error.message });
+  }
+});
+
+// GET /api/checador/dispositivos-activos - Obtener dispositivos activos con última ubicación
+router.get('/dispositivos-activos', async (req, res) => {
+  try {
+    // Obtener la última ubicación de cada dispositivo
+    const dispositivos = await ChecadorEvento.aggregate([
+      {
+        $sort: { fechaHora: -1 }
+      },
+      {
+        $group: {
+          _id: '$empleadoId',
+          empleadoId: { $first: '$empleadoId' },
+          empleadoNombre: { $first: '$empleadoNombre' },
+          ultimaUbicacion: { $first: '$$ROOT' },
+          totalEventos: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { 'ultimaUbicacion.fechaHora': -1 }
+      }
+    ]);
+
+    // Enriquecer con información de estado actual
+    const dispositivosEnriquecidos = dispositivos.map(dispositivo => {
+      const ultimoEvento = dispositivo.ultimaUbicacion;
+      let estadoActual = 'fuera';
+      
+      if (ultimoEvento.tipoEvento === 'entrada' || ultimoEvento.tipoEvento === 'dentro') {
+        estadoActual = 'dentro';
+      } else if (ultimoEvento.tipoEvento === 'salida' || ultimoEvento.tipoEvento === 'fuera') {
+        estadoActual = 'fuera';
+      }
+
+      return {
+        ...dispositivo,
+        estadoActual,
+        ultimaUbicacion: {
+          latitud: ultimoEvento.latitud,
+          longitud: ultimoEvento.longitud,
+          fechaHora: ultimoEvento.fechaHora,
+          tipoEvento: ultimoEvento.tipoEvento,
+          plantaId: ultimoEvento.plantaId,
+          plantaNombre: ultimoEvento.plantaNombre
+        }
+      };
+    });
+
+    res.json({
+      error: false,
+      data: dispositivosEnriquecidos
+    });
+  } catch (error) {
+    res.status(500).json({ error: true, message: 'Error al obtener dispositivos activos', details: error.message });
+  }
+});
+
+// GET /api/checador/eventos-filtrados - Eventos con filtros avanzados
+router.get('/eventos-filtrados', async (req, res) => {
+  try {
+    const { 
+      fechaInicio, 
+      fechaFin, 
+      empleadoId, 
+      empleadoNombre, 
+      plantaId, 
+      tipoEvento,
+      limit = 100,
+      skip = 0
+    } = req.query;
+
+    let filtro = {};
+
+    // Filtro por rango de fechas
+    if (fechaInicio || fechaFin) {
+      filtro.fechaHora = {};
+      if (fechaInicio) {
+        filtro.fechaHora.$gte = new Date(fechaInicio);
+      }
+      if (fechaFin) {
+        const fechaFinAjustada = new Date(fechaFin);
+        fechaFinAjustada.setDate(fechaFinAjustada.getDate() + 1);
+        filtro.fechaHora.$lt = fechaFinAjustada;
+      }
+    }
+
+    // Filtro por empleado
+    if (empleadoId) {
+      filtro.empleadoId = empleadoId;
+    }
+
+    if (empleadoNombre) {
+      filtro.empleadoNombre = { $regex: empleadoNombre, $options: 'i' };
+    }
+
+    // Filtro por planta
+    if (plantaId) {
+      filtro.plantaId = plantaId;
+    }
+
+    // Filtro por tipo de evento
+    if (tipoEvento) {
+      if (Array.isArray(tipoEvento)) {
+        filtro.tipoEvento = { $in: tipoEvento };
+      } else {
+        filtro.tipoEvento = tipoEvento;
+      }
+    }
+
+    const eventos = await ChecadorEvento.find(filtro)
+      .sort({ fechaHora: -1 })
+      .limit(parseInt(limit))
+      .skip(parseInt(skip));
+
+    const total = await ChecadorEvento.countDocuments(filtro);
+
+    res.json({
+      error: false,
+      data: eventos,
+      total,
+      limit: parseInt(limit),
+      skip: parseInt(skip)
+    });
+  } catch (error) {
+    res.status(500).json({ error: true, message: 'Error al obtener eventos filtrados', details: error.message });
   }
 });
 

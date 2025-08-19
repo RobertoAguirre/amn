@@ -7,54 +7,49 @@
   let dispositivos: any[] = [];
   let estadisticasGlobales: any = {};
   let loading = true;
-  let filtroFecha = '';
+  let filtroFechaInicio = '';
+  let filtroFechaFin = '';
   let filtroEmpleado = '';
   let filtroGeocerca = '';
+  let totalEventos = 0;
+  let paginaActual = 0;
+  const eventosPorPagina = 50;
 
   async function cargarDatos() {
     loading = true;
     try {
-      // Cargar eventos de checador
-      const eventosRes = await fetch(apiUrl('/api/checador/mvp'));
+      // Cargar dispositivos activos con nueva API
+      const dispositivosRes = await fetch(apiUrl('/api/checador/dispositivos-activos'));
+      const dispositivosData = await dispositivosRes.json();
+      dispositivos = dispositivosData.data || [];
+
+      // Cargar eventos con filtros usando nueva API
+      const params = new URLSearchParams();
+      if (filtroFechaInicio) params.append('fechaInicio', filtroFechaInicio);
+      if (filtroFechaFin) params.append('fechaFin', filtroFechaFin);
+      if (filtroEmpleado) params.append('empleadoNombre', filtroEmpleado);
+      if (filtroGeocerca) params.append('plantaId', filtroGeocerca);
+      params.append('limit', eventosPorPagina.toString());
+      params.append('skip', (paginaActual * eventosPorPagina).toString());
+
+      const eventosRes = await fetch(apiUrl(`/api/checador/eventos-filtrados?${params}`));
       const eventosData = await eventosRes.json();
       eventos = eventosData.data || [];
-
-      // Cargar eventos específicos de geocercas
-      const eventosGeocercaRes = await fetch(apiUrl('/api/checador/eventos-geocerca'));
-      const eventosGeocercaData = await eventosGeocercaRes.json();
-      const eventosGeocerca = eventosGeocercaData.data || [];
+      totalEventos = eventosData.total || 0;
 
       // Cargar geocercas
       const geocercasRes = await fetch(apiUrl('/api/geocercas'));
       const geocercasData = await geocercasRes.json();
       geocercas = geocercasData.data || [];
 
-      // Cargar estadísticas
-      const estadisticasRes = await fetch(apiUrl('/api/checador/estadisticas'));
+      // Cargar estadísticas con filtros
+      const estadisticasParams = new URLSearchParams();
+      if (filtroFechaInicio) estadisticasParams.append('fechaInicio', filtroFechaInicio);
+      if (filtroFechaFin) estadisticasParams.append('fechaFin', filtroFechaFin);
+      
+      const estadisticasRes = await fetch(apiUrl(`/api/checador/estadisticas?${estadisticasParams}`));
       const estadisticasData = await estadisticasRes.json();
       estadisticasGlobales = estadisticasData.data || {};
-
-      // Agrupar eventos por dispositivo para mostrar ubicaciones actuales
-      const dispositivosMap = new Map();
-      eventos.forEach(evento => {
-        if (!dispositivosMap.has(evento.empleadoId)) {
-          dispositivosMap.set(evento.empleadoId, {
-            empleadoId: evento.empleadoId,
-            empleadoNombre: evento.empleadoNombre,
-            ultimaUbicacion: evento,
-            totalEventos: 0,
-            estadoActual: 'fuera'
-          });
-        }
-        const dispositivo = dispositivosMap.get(evento.empleadoId);
-        dispositivo.totalEventos++;
-        // Actualizar solo si este evento es más reciente
-        if (new Date(evento.fechaHora) > new Date(dispositivo.ultimaUbicacion.fechaHora)) {
-          dispositivo.ultimaUbicacion = evento;
-          dispositivo.estadoActual = evento.tipoEvento === 'entrada' || evento.tipoEvento === 'dentro' ? 'dentro' : 'fuera';
-        }
-      });
-      dispositivos = Array.from(dispositivosMap.values());
 
     } catch (error) {
       console.error('Error cargando datos:', error);
@@ -63,28 +58,15 @@
     }
   }
 
-  function filtrarEventos() {
-    return eventos.filter(evento => {
-      const cumpleFecha = !filtroFecha || 
-        new Date(evento.fechaHora).toLocaleDateString() === filtroFecha;
-      const cumpleEmpleado = !filtroEmpleado || 
-        evento.empleadoNombre?.toLowerCase().includes(filtroEmpleado.toLowerCase());
-      const cumpleGeocerca = !filtroGeocerca || 
-        evento.plantaId === filtroGeocerca;
-      
-      return cumpleFecha && cumpleEmpleado && cumpleGeocerca;
-    });
-  }
-
   function obtenerEstadisticas() {
-    const eventosFiltrados = filtrarEventos();
     const hoy = new Date().toDateString();
+    const eventosHoy = eventos.filter(e => 
+      new Date(e.fechaHora).toDateString() === hoy
+    ).length;
     
     return {
-      totalEventos: eventosFiltrados.length,
-      eventosHoy: eventosFiltrados.filter(e => 
-        new Date(e.fechaHora).toDateString() === hoy
-      ).length,
+      totalEventos: totalEventos,
+      eventosHoy: eventosHoy,
       dispositivosActivos: dispositivos.length,
       geocercasActivas: geocercas.length
     };
@@ -100,7 +82,40 @@
       case 'salida': return 'bg-red-100 text-red-800';
       case 'inicio_trabajo': return 'bg-blue-100 text-blue-800';
       case 'fin_trabajo': return 'bg-orange-100 text-orange-800';
+      case 'comida': return 'bg-yellow-100 text-yellow-800';
+      case 'reanudar_trabajo': return 'bg-purple-100 text-purple-800';
+      case 'apertura_app': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  function obtenerTipoEventoTexto(tipo: string) {
+    switch (tipo?.toLowerCase()) {
+      case 'entrada': return '🚪 Entrada';
+      case 'salida': return '🚪 Salida';
+      case 'inicio_trabajo': return '🏭 Inicio Trabajo';
+      case 'fin_trabajo': return '🏭 Fin Trabajo';
+      case 'comida': return '🍽️ Comida';
+      case 'reanudar_trabajo': return '🏭 Reanudar Trabajo';
+      case 'apertura_app': return '📱 App Abierta';
+      default: return tipo || 'N/A';
+    }
+  }
+
+  function limpiarFiltros() {
+    filtroFechaInicio = '';
+    filtroFechaFin = '';
+    filtroEmpleado = '';
+    filtroGeocerca = '';
+    paginaActual = 0;
+    cargarDatos();
+  }
+
+  function cambiarPagina(direccion: number) {
+    const nuevaPagina = paginaActual + direccion;
+    if (nuevaPagina >= 0 && nuevaPagina * eventosPorPagina < totalEventos) {
+      paginaActual = nuevaPagina;
+      cargarDatos();
     }
   }
 
@@ -111,8 +126,8 @@
     return () => clearInterval(interval);
   });
 
-  $: eventosFiltrados = filtrarEventos();
   $: estadisticas = obtenerEstadisticas();
+  $: totalPaginas = Math.ceil(totalEventos / eventosPorPagina);
 </script>
 
 <div class="p-6">
@@ -149,13 +164,31 @@
 
   <!-- Filtros -->
   <div class="bg-white p-4 rounded-lg shadow mb-6">
-    <h3 class="text-lg font-semibold mb-3">Filtros</h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="text-lg font-semibold">Filtros</h3>
+      <button 
+        class="text-sm text-gray-500 hover:text-gray-700"
+        on:click={limpiarFiltros}
+      >
+        Limpiar filtros
+      </button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio</label>
         <input 
           type="date" 
-          bind:value={filtroFecha}
+          bind:value={filtroFechaInicio}
+          on:change={cargarDatos}
+          class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Fin</label>
+        <input 
+          type="date" 
+          bind:value={filtroFechaFin}
+          on:change={cargarDatos}
           class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -164,6 +197,7 @@
         <input 
           type="text" 
           bind:value={filtroEmpleado}
+          on:input={cargarDatos}
           placeholder="Buscar por nombre..."
           class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
         />
@@ -172,6 +206,7 @@
         <label class="block text-sm font-medium text-gray-700 mb-1">Geocerca</label>
         <select 
           bind:value={filtroGeocerca}
+          on:change={cargarDatos}
           class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Todas las geocercas</option>
@@ -186,7 +221,7 @@
   <!-- Dispositivos Activos -->
   <div class="bg-white rounded-lg shadow mb-6">
     <div class="p-4 border-b">
-      <h3 class="text-lg font-semibold">Dispositivos Activos</h3>
+      <h3 class="text-lg font-semibold">Dispositivos Activos ({dispositivos.length})</h3>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full">
@@ -226,7 +261,7 @@
               <td class="px-4 py-3">
                 <div>
                   <span class="inline-block px-2 py-1 text-xs rounded-full {obtenerTipoEventoColor(dispositivo.ultimaUbicacion.tipoEvento)}">
-                    {dispositivo.ultimaUbicacion.tipoEvento || 'N/A'}
+                    {obtenerTipoEventoTexto(dispositivo.ultimaUbicacion.tipoEvento)}
                   </span>
                   <p class="text-sm text-gray-500 mt-1">
                     {formatearFecha(dispositivo.ultimaUbicacion.fechaHora)}
@@ -274,7 +309,7 @@
               </td>
               <td class="px-4 py-3">
                 <span class="inline-block px-2 py-1 text-xs rounded-full {obtenerTipoEventoColor(evento.tipoEvento)}">
-                  {evento.tipoEvento === 'entrada' ? '🚪 Entrada' : '🚪 Salida'}
+                  {obtenerTipoEventoTexto(evento.tipoEvento)}
                 </span>
               </td>
               <td class="px-4 py-3 text-sm text-gray-900">
@@ -296,7 +331,7 @@
   <!-- Historial Completo de Eventos -->
   <div class="bg-white rounded-lg shadow">
     <div class="p-4 border-b">
-      <h3 class="text-lg font-semibold">Historial Completo de Eventos ({eventosFiltrados.length})</h3>
+      <h3 class="text-lg font-semibold">Historial Completo de Eventos ({totalEventos})</h3>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full">
@@ -310,7 +345,7 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
-          {#each eventosFiltrados as evento}
+          {#each eventos as evento}
             <tr class="hover:bg-gray-50">
               <td class="px-4 py-3 text-sm text-gray-900">
                 {formatearFecha(evento.fechaHora)}
@@ -323,7 +358,7 @@
               </td>
               <td class="px-4 py-3">
                 <span class="inline-block px-2 py-1 text-xs rounded-full {obtenerTipoEventoColor(evento.tipoEvento)}">
-                  {evento.tipoEvento || 'N/A'}
+                  {obtenerTipoEventoTexto(evento.tipoEvento)}
                 </span>
               </td>
               <td class="px-4 py-3 text-sm text-gray-900">
@@ -340,5 +375,33 @@
         </tbody>
       </table>
     </div>
+    
+    <!-- Paginación -->
+    {#if totalPaginas > 1}
+      <div class="p-4 border-t flex justify-between items-center">
+        <div class="text-sm text-gray-700">
+          Mostrando {paginaActual * eventosPorPagina + 1} - {Math.min((paginaActual + 1) * eventosPorPagina, totalEventos)} de {totalEventos} eventos
+        </div>
+        <div class="flex space-x-2">
+          <button 
+            class="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50"
+            disabled={paginaActual === 0}
+            on:click={() => cambiarPagina(-1)}
+          >
+            Anterior
+          </button>
+          <span class="px-3 py-1 text-sm">
+            Página {paginaActual + 1} de {totalPaginas}
+          </span>
+          <button 
+            class="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50"
+            disabled={paginaActual >= totalPaginas - 1}
+            on:click={() => cambiarPagina(1)}
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    {/if}
   </div>
 </div> 
