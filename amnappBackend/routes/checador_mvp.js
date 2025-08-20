@@ -684,7 +684,7 @@ router.get('/historial-movimiento', async (req, res) => {
         empleadoNombre: evento.empleadoNombre,
         color: color,
         icono: icono,
-        popup: `${icono} ${evento.tipoEvento.toUpperCase()}<br>${evento.plantaNombre || 'Sin planta'}<br>${new Date(evento.fechaHora).toLocaleString('es-ES')}`
+        popup: `${icono} ${evento.tipoEvento.toUpperCase()}<br>${evento.plantaNombre || 'Sin planta'}<br>${new Date(evento.fechaHora).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}`
       };
     });
     

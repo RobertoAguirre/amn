@@ -1,4 +1,8 @@
 require('dotenv').config();
+
+// Configurar zona horaria para México (UTC-6)
+process.env.TZ = 'America/Mexico_City';
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
