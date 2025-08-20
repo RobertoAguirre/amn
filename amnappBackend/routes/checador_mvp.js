@@ -158,13 +158,13 @@ router.post('/mvp', async (req, res) => {
       }
     }
 
-    // Usar hora local de México (UTC-6) con mejor manejo
+    // Usar hora local de México
     let fechaHora;
     if (req.body.fechaHora) {
       fechaHora = new Date(req.body.fechaHora);
       console.log(`🕐 [Checador] Fecha recibida del cliente: ${fechaHora.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}`);
     } else {
-      fechaHora = new Date(Date.now() - (6 * 60 * 60 * 1000)); // UTC-6
+      fechaHora = new Date(); // Usar fecha actual del servidor (ya configurada en TZ)
       console.log(`🕐 [Checador] Fecha generada en servidor: ${fechaHora.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}`);
     }
 
@@ -697,6 +697,28 @@ router.get('/historial-movimiento', async (req, res) => {
   } catch (error) {
     console.error('❌ [Historial] Error:', error);
     res.status(500).json({ error: true, message: 'Error al obtener historial de movimiento', details: error.message });
+  }
+});
+
+// DELETE /api/checador/limpiar-empleado - Eliminar todos los eventos de un empleado específico
+router.delete('/limpiar-empleado/:empleadoId', async (req, res) => {
+  try {
+    const { empleadoId } = req.params;
+    
+    console.log(`🗑️ [Limpiar] Eliminando todos los eventos del empleado ${empleadoId}...`);
+    
+    const resultado = await ChecadorEvento.deleteMany({ empleadoId: empleadoId });
+    
+    console.log(`✅ [Limpiar] ${resultado.deletedCount} eventos eliminados del empleado ${empleadoId}`);
+    
+    res.json({
+      error: false,
+      message: `${resultado.deletedCount} eventos eliminados del empleado ${empleadoId}`,
+      deletedCount: resultado.deletedCount
+    });
+  } catch (error) {
+    console.error('❌ [Limpiar] Error:', error);
+    res.status(500).json({ error: true, message: 'Error al eliminar eventos', details: error.message });
   }
 });
 
