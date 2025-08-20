@@ -582,4 +582,122 @@ router.get('/test', async (req, res) => {
   }
 });
 
+// GET /api/checador/empleados - Obtener lista de empleados para el dropdown
+router.get('/empleados', async (req, res) => {
+  try {
+    console.log('👥 [Empleados] Obteniendo lista de empleados...');
+    
+    const empleados = await ChecadorEvento.aggregate([
+      {
+        $group: {
+          _id: '$empleadoId',
+          empleadoNombre: { $first: '$empleadoNombre' },
+          ultimoEvento: { $max: '$fechaHora' }
+        }
+      },
+      {
+        $sort: { empleadoNombre: 1 }
+      }
+    ]);
+    
+    console.log(`✅ [Empleados] ${empleados.length} empleados encontrados`);
+    
+    res.json({
+      error: false,
+      data: empleados.map(emp => ({
+        empleadoId: emp._id,
+        empleadoNombre: emp.empleadoNombre,
+        ultimoEvento: emp.ultimoEvento
+      }))
+    });
+  } catch (error) {
+    console.error('❌ [Empleados] Error:', error);
+    res.status(500).json({ error: true, message: 'Error al obtener empleados', details: error.message });
+  }
+});
+
+// GET /api/checador/historial-movimiento - Obtener historial de movimiento de un empleado
+router.get('/historial-movimiento', async (req, res) => {
+  try {
+    const { empleadoId, fechaInicio, fechaFin } = req.query;
+    
+    console.log('🗺️ [Historial] Obteniendo historial de movimiento:', { empleadoId, fechaInicio, fechaFin });
+    
+    if (!empleadoId || !fechaInicio || !fechaFin) {
+      return res.status(400).json({
+        error: true,
+        message: 'Se requieren empleadoId, fechaInicio y fechaFin'
+      });
+    }
+    
+    const filtro = {
+      empleadoId: empleadoId,
+      fechaHora: {
+        $gte: new Date(fechaInicio),
+        $lt: new Date(new Date(fechaFin).setDate(new Date(fechaFin).getDate() + 1))
+      }
+    };
+    
+    console.log('🔍 [Historial] Filtro aplicado:', JSON.stringify(filtro, null, 2));
+    
+    const eventos = await ChecadorEvento.find(filtro)
+      .sort({ fechaHora: 1 })
+      .select('fechaHora latitud longitud tipoEvento plantaNombre empleadoNombre');
+    
+    console.log(`✅ [Historial] ${eventos.length} eventos encontrados para el empleado`);
+    
+    // Mapear eventos con colores según tipo
+    const eventosConColores = eventos.map(evento => {
+      let color = '#666666'; // Color por defecto (gris)
+      let icono = '📍';
+      const tipoEvento = evento.tipoEvento;
+      
+      if (tipoEvento === 'entrada' || tipoEvento === 'Inicio de trabajo') {
+        color = '#28a745'; // Verde
+        icono = '🟢';
+      } else if (tipoEvento === 'salida' || tipoEvento === 'Cierre') {
+        color = '#dc3545'; // Rojo
+        icono = '🔴';
+      } else if (tipoEvento === 'Comida') {
+        color = '#ffc107'; // Amarillo
+        icono = '🍽️';
+      } else if (tipoEvento === 'reanudar_trabajo' || tipoEvento === 'Reanudar trabajo') {
+        color = '#17a2b8'; // Azul
+        icono = '⏰';
+      } else if (tipoEvento === 'dentro') {
+        color = '#6f42c1'; // Púrpura
+        icono = '🟣';
+      } else if (tipoEvento === 'fuera') {
+        color = '#fd7e14'; // Naranja
+        icono = '🟠';
+      } else if (tipoEvento === 'Ubicación automática') {
+        color = '#6c757d'; // Gris
+        icono = '📍';
+      }
+      
+      return {
+        fechaHora: evento.fechaHora,
+        latitud: evento.latitud,
+        longitud: evento.longitud,
+        tipoEvento: evento.tipoEvento,
+        plantaNombre: evento.plantaNombre,
+        empleadoNombre: evento.empleadoNombre,
+        color: color,
+        icono: icono,
+        popup: `${icono} ${evento.tipoEvento.toUpperCase()}<br>${evento.plantaNombre || 'Sin planta'}<br>${new Date(evento.fechaHora).toLocaleString('es-ES')}`
+      };
+    });
+    
+    res.json({
+      error: false,
+      data: eventosConColores,
+      total: eventosConColores.length,
+      empleado: eventos.length > 0 ? eventos[0].empleadoNombre : 'Desconocido'
+    });
+  } catch (error) {
+    console.error('❌ [Historial] Error:', error);
+    res.status(500).json({ error: true, message: 'Error al obtener historial de movimiento', details: error.message });
+  }
+});
+
 module.exports = router; 

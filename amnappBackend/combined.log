@@ -813,3 +813,28 @@
 [2025-07-23T20:23:17.437Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
 [2025-07-23T20:23:17.437Z] [32minfo[39m: 🔌 Puerto: 3000
 [2025-07-23T20:23:17.437Z] [32minfo[39m: 🌍 Entorno: development
+[2025-08-20T18:07:04.715Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-08-20T18:07:04.716Z] [32minfo[39m: 🌐 Accesible en: http://localhost:3000
+[2025-08-20T18:07:04.716Z] [32minfo[39m: 📱 Para dispositivos móviles: http://192.168.0.109:3000
+[2025-08-20T18:07:05.593Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-08-20T18:07:05.593Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-08-20T18:07:05.594Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-08-20T18:07:05.594Z] [32minfo[39m: 🌍 Entorno: development
+[2025-08-20T18:07:11.633Z] [32minfo[39m: GET /api/checador/empleados - 127.0.0.1
+[2025-08-20T18:07:20.119Z] [32minfo[39m: GET /api/checador/historial-movimiento - 127.0.0.1
+[2025-08-20T18:16:05.576Z] [32minfo[39m: GET /api/checador/historial-movimiento - 127.0.0.1
+[2025-08-20T18:17:19.332Z] [32minfo[39m: GET /api/checador/historial-movimiento - 127.0.0.1
+[2025-08-20T18:21:25.388Z] [32minfo[39m: GET /api/checador/historial-movimiento - 127.0.0.1
+[2025-08-20T18:22:18.460Z] [32minfo[39m: GET /api/checador/historial-movimiento - 127.0.0.1
+[2025-08-20T18:27:42.075Z] [32minfo[39m: 🚀 Servidor corriendo en puerto 3000
+[2025-08-20T18:27:42.078Z] [32minfo[39m: 🌐 Accesible en: http://localhost:3000
+[2025-08-20T18:27:42.078Z] [32minfo[39m: 📱 Para dispositivos móviles: http://192.168.0.109:3000
+[2025-08-20T18:27:43.076Z] [32minfo[39m: ✅ Conexión exitosa a MongoDB
+[2025-08-20T18:27:43.076Z] [32minfo[39m: 📦 Base de datos: amnapp?retryWrites=true&w=majority&appName=Cluster0
+[2025-08-20T18:27:43.077Z] [32minfo[39m: 🔌 Puerto: 3000
+[2025-08-20T18:27:43.077Z] [32minfo[39m: 🌍 Entorno: development
+[2025-08-20T18:31:18.158Z] [32minfo[39m: GET /api/checador/empleados - 127.0.0.1
+[2025-08-20T18:31:56.661Z] [32minfo[39m: GET /api/checador/empleados - 127.0.0.1
+[2025-08-20T18:32:06.167Z] [32minfo[39m: GET /api/checador/empleados - 127.0.0.1
+[2025-08-20T18:32:14.588Z] [32minfo[39m: GET /api/checador/empleados - 127.0.0.1
+[2025-08-20T18:32:24.358Z] [32minfo[39m: GET /api/checador/historial-movimiento - 127.0.0.1
