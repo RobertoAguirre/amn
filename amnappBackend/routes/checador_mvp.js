@@ -164,8 +164,12 @@ router.post('/mvp', async (req, res) => {
       fechaHora = new Date(req.body.fechaHora);
       console.log(`🕐 [Checador] Fecha recibida del cliente: ${fechaHora.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}`);
     } else {
-      fechaHora = new Date(); // Usar fecha actual del servidor (ya configurada en TZ)
-      console.log(`🕐 [Checador] Fecha generada en servidor: ${fechaHora.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}`);
+      // Crear fecha en zona horaria de México y convertir a UTC para MongoDB
+      const ahora = new Date();
+      const horaMexico = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Mexico_City' }));
+      fechaHora = new Date(horaMexico.getTime() + (6 * 60 * 60 * 1000)); // Ajustar a UTC
+      console.log(`🕐 [Checador] Fecha generada en servidor (México): ${ahora.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}`);
+      console.log(`🕐 [Checador] Fecha guardada en BD (UTC): ${fechaHora.toISOString()}`);
     }
 
     const evento = new ChecadorEvento({
