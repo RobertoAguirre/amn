@@ -20,31 +20,15 @@
     // Volver a cargar los drawnItems
     map.addLayer(drawnItems);
     // Mostrar ubicaciones de dispositivos (checador)
-    fetch(apiUrl('/api/checador/mvp'))
+    fetch(apiUrl('/api/checador/dispositivos-activos'))
       .then(r => r.json())
       .then(res => {
         if (res.data && Array.isArray(res.data)) {
-          // Agrupar eventos por dispositivo y obtener la última ubicación de cada uno
-          const dispositivosMap = new Map();
-          
-          (res.data as any[]).forEach((evento: any) => {
-            if (evento.latitud && evento.longitud && evento.empleadoId) {
-              if (!dispositivosMap.has(evento.empleadoId)) {
-                dispositivosMap.set(evento.empleadoId, evento);
-              } else {
-                // Si ya existe, actualizar solo si este evento es más reciente
-                const eventoExistente = dispositivosMap.get(evento.empleadoId);
-                if (new Date(evento.fechaHora) > new Date(eventoExistente.fechaHora)) {
-                  dispositivosMap.set(evento.empleadoId, evento);
-                }
-              }
-            }
-          });
-          
           // Crear un marcador por dispositivo con su última ubicación
-          dispositivosMap.forEach((evento: any) => {
-            const estadoColor = evento.tipoEvento === 'entrada' || evento.tipoEvento === 'dentro' ? 'green' : 'red';
-            const estadoIcono = evento.tipoEvento === 'entrada' || evento.tipoEvento === 'dentro' ? '🟢' : '🔴';
+          (res.data as any[]).forEach((dispositivo: any) => {
+            const ultimaUbicacion = dispositivo.ultimaUbicacion;
+            const estadoColor = dispositivo.estadoActual === 'dentro' ? 'green' : 'red';
+            const estadoIcono = dispositivo.estadoActual === 'dentro' ? '🟢' : '🔴';
             
             const customIcon = L.divIcon({
               className: 'custom-marker',
@@ -53,14 +37,14 @@
               iconAnchor: [10, 10]
             });
             
-            L.marker([evento.latitud, evento.longitud], { icon: customIcon })
+            L.marker([ultimaUbicacion.latitud, ultimaUbicacion.longitud], { icon: customIcon })
               .addTo(map)
               .bindPopup(
-                `<b>${evento.empleadoNombre || 'Dispositivo'}</b><br/>
-                 <small>ID: ${evento.empleadoId}</small><br/>
-                 <span style="color: ${estadoColor};">${estadoIcono} ${evento.tipoEvento || 'Ubicación'}</span><br/>
-                 ${evento.plantaNombre ? `Planta: ${evento.plantaNombre}<br/>` : ''}
-                 <small>${evento.fechaHora ? new Date(evento.fechaHora).toLocaleString('es-MX') : ''}</small>`
+                `<b>${dispositivo.empleadoNombre || 'Dispositivo'}</b><br/>
+                 <small>ID: ${dispositivo.empleadoId}</small><br/>
+                 <span style="color: ${estadoColor};">${estadoIcono} ${ultimaUbicacion.tipoEvento || 'Ubicación'}</span><br/>
+                 ${ultimaUbicacion.plantaNombre ? `Planta: ${ultimaUbicacion.plantaNombre}<br/>` : ''}
+                 <small>${ultimaUbicacion.fechaHora ? new Date(ultimaUbicacion.fechaHora).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }) : ''}</small>`
               );
           });
         }
