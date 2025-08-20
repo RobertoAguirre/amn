@@ -44,7 +44,7 @@
                  <small>ID: ${dispositivo.empleadoId}</small><br/>
                  <span style="color: ${estadoColor};">${estadoIcono} ${ultimaUbicacion.tipoEvento || 'Ubicación'}</span><br/>
                  ${ultimaUbicacion.plantaNombre ? `Planta: ${ultimaUbicacion.plantaNombre}<br/>` : ''}
-                 <small>${ultimaUbicacion.fechaHora ? new Date(ultimaUbicacion.fechaHora).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }) : ''}</small><br/>
+                 <small>${ultimaUbicacion.fechaHora}</small><br/>
                  <small style="font-size: 10px; color: #666;">UTC: ${ultimaUbicacion.fechaHora}</small>`
               );
           });
