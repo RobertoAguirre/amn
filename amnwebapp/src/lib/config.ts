@@ -1,5 +1,5 @@
 // Configuración del API
-export const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'https://amn-pgrc.onrender.com';
+export const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000';
 
 // Función helper para construir URLs del API
 export function apiUrl(path: string): string {

@@ -18,6 +18,7 @@
     <button class="text-left p-2 rounded hover:bg-yellow-100" on:click={() => nav('/geocercas')}>Geocercas</button>
     <button class="text-left p-2 rounded hover:bg-yellow-100" on:click={() => nav('/reportes')}>Reportes</button>
     <button class="text-left p-2 rounded hover:bg-yellow-100" on:click={() => nav('/nomina')}>Nómina</button>
+    <button class="text-left p-2 rounded hover:bg-yellow-100" on:click={() => nav('/historial')}>Historial de Movimiento</button>
     <button class="text-left p-2 rounded bg-red-100 text-red-700 mt-auto" on:click={logout}>Cerrar sesión</button>
   </nav>
 {/if} 
