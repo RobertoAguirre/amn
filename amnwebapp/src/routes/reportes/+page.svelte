@@ -24,10 +24,16 @@
       const dispositivosRes = await fetch(apiUrl('/api/checador/dispositivos-activos'));
       if (dispositivosRes.ok) {
         const dispositivosData = await dispositivosRes.json();
-        if (!dispositivosData.error) {
-          dispositivos = dispositivosData.data || [];
-          console.log(`📱 [Reportes] Dispositivos activos: ${dispositivos.length}`);
+        if (!dispositivosData.error && dispositivosData.data) {
+          dispositivos = dispositivosData.data;
+          console.log(`📱 [Reportes] Dispositivos activos cargados: ${dispositivos.length}`);
+        } else {
+          console.warn('⚠️ [Reportes] Dispositivos con error o sin data:', dispositivosData);
+          dispositivos = [];
         }
+      } else {
+        console.warn(`⚠️ [Reportes] Error cargando dispositivos: ${dispositivosRes.status}`);
+        dispositivos = [];
       }
 
       // Cargar eventos con filtros usando nueva API
@@ -53,10 +59,16 @@
       const geocercasRes = await fetch(apiUrl('/api/geocercas'));
       if (geocercasRes.ok) {
         const geocercasData = await geocercasRes.json();
-        if (!geocercasData.error) {
-          geocercas = geocercasData.data || [];
-          console.log(`📍 [Reportes] Geocercas: ${geocercas.length}`);
+        if (!geocercasData.error && geocercasData.data) {
+          geocercas = geocercasData.data;
+          console.log(`📍 [Reportes] Geocercas cargadas: ${geocercas.length}`);
+        } else {
+          console.warn('⚠️ [Reportes] Geocercas con error o sin data:', geocercasData);
+          geocercas = [];
         }
+      } else {
+        console.warn(`⚠️ [Reportes] Error cargando geocercas: ${geocercasRes.status}`);
+        geocercas = [];
       }
 
       // Cargar estadísticas globales (siempre sin filtros para tener el total real)
@@ -64,12 +76,17 @@
       const estadisticasRes = await fetch(apiUrl('/api/checador/estadisticas'));
       if (estadisticasRes.ok) {
         const estadisticasData = await estadisticasRes.json();
-        if (!estadisticasData.error) {
-          estadisticasGlobales = estadisticasData.data || {};
-          console.log(`📈 [Reportes] Estadísticas globales:`, estadisticasGlobales);
+        if (!estadisticasData.error && estadisticasData.data) {
+          estadisticasGlobales = estadisticasData.data;
+          console.log(`📈 [Reportes] Estadísticas globales cargadas:`, estadisticasGlobales);
+        } else {
+          console.warn('⚠️ [Reportes] Estadísticas con error o sin data:', estadisticasData);
+          estadisticasGlobales = {};
         }
       } else {
-        console.warn('⚠️ [Reportes] No se pudieron cargar estadísticas globales');
+        const errorText = await estadisticasRes.text().catch(() => '');
+        console.warn(`⚠️ [Reportes] Error cargando estadísticas: ${estadisticasRes.status} - ${errorText}`);
+        estadisticasGlobales = {};
       }
 
     } catch (error) {
@@ -85,14 +102,21 @@
     // Si no hay filtros, usar estadisticasGlobales.totalEventos
     const totalEventosCalculado = filtroFechaInicio || filtroFechaFin 
       ? totalEventos 
-      : (estadisticasGlobales.totalEventos || totalEventos || 0);
+      : (estadisticasGlobales?.totalEventos ?? totalEventos ?? 0);
     
-    return {
+    const stats = {
       totalEventos: totalEventosCalculado,
-      eventosHoy: estadisticasGlobales.eventosHoy || 0,
+      eventosHoy: estadisticasGlobales?.eventosHoy ?? 0,
       dispositivosActivos: dispositivos.length,
       geocercasActivas: geocercas.length
     };
+    
+    // Debug: mostrar en consola si hay valores 0 inesperados
+    if (stats.dispositivosActivos === 0 && dispositivos.length > 0) {
+      console.warn('⚠️ [Reportes] Dispositivos en array pero estadísticas muestran 0');
+    }
+    
+    return stats;
   }
 
   function formatearFecha(fecha: string) {
