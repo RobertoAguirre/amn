@@ -96,7 +96,8 @@
     }
   }
 
-  function obtenerEstadisticas() {
+  // Función reactiva que se recalcula cuando cambian los datos
+  $: estadisticas = (() => {
     // Usar estadísticas del backend cuando están disponibles
     // Si hay filtros aplicados, usar totalEventos de la paginación
     // Si no hay filtros, usar estadisticasGlobales.totalEventos
@@ -104,20 +105,13 @@
       ? totalEventos 
       : (estadisticasGlobales?.totalEventos ?? totalEventos ?? 0);
     
-    const stats = {
+    return {
       totalEventos: totalEventosCalculado,
       eventosHoy: estadisticasGlobales?.eventosHoy ?? 0,
-      dispositivosActivos: dispositivos.length,
-      geocercasActivas: geocercas.length
+      dispositivosActivos: dispositivos?.length ?? 0,
+      geocercasActivas: geocercas?.length ?? 0
     };
-    
-    // Debug: mostrar en consola si hay valores 0 inesperados
-    if (stats.dispositivosActivos === 0 && dispositivos.length > 0) {
-      console.warn('⚠️ [Reportes] Dispositivos en array pero estadísticas muestran 0');
-    }
-    
-    return stats;
-  }
+  })();
 
   function formatearFecha(fecha: string) {
     return new Date(fecha).toLocaleString('es-MX');
@@ -173,7 +167,6 @@
     return () => clearInterval(interval);
   });
 
-  $: estadisticas = obtenerEstadisticas();
   $: totalPaginas = Math.ceil(totalEventos / eventosPorPagina);
 </script>
 
