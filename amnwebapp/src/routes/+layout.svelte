@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import Sidebar from '$lib/components/Sidebar.svelte';
+	import Notificaciones from '$lib/components/Notificaciones.svelte';
 	import { page } from '$app/stores';
 	let sidebarOpen = false;
 	function logout() {
@@ -23,9 +24,12 @@
 				<span class="font-bold text-lg text-black">AMN Admin</span>
 				<!-- Aquí puedes poner el logo a la izquierda o derecha -->
 			</div>
-			<button class="px-4 py-2 rounded bg-red-100 text-red-700 hover:bg-red-200 transition" on:click={logout}>
-				Cerrar sesión
-			</button>
+			<div class="flex items-center gap-4">
+				<Notificaciones />
+				<button class="px-4 py-2 rounded bg-red-100 text-red-700 hover:bg-red-200 transition" on:click={logout}>
+					Cerrar sesión
+				</button>
+			</div>
 		</header>
 		<div class="flex flex-1">
 			<Sidebar open={sidebarOpen} />

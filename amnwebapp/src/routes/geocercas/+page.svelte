@@ -10,7 +10,7 @@
 
   import { apiUrl } from '$lib/config';
 
-  function cargarMarcadores(L: any) {
+  async function cargarMarcadores(L: any) {
     // Limpiar marcadores previos
     map.eachLayer((layer: any) => {
       if (layer instanceof L.Marker) {
@@ -20,35 +20,45 @@
     // Volver a cargar los drawnItems
     map.addLayer(drawnItems);
     // Mostrar ubicaciones de dispositivos (checador)
-    fetch(apiUrl('/api/checador/dispositivos-activos'))
-      .then(r => r.json())
-      .then(res => {
-        if (res.data && Array.isArray(res.data)) {
-          // Crear un marcador por dispositivo con su última ubicación
-          (res.data as any[]).forEach((dispositivo: any) => {
-            const ultimaUbicacion = dispositivo.ultimaUbicacion;
-            const estadoColor = dispositivo.estadoActual === 'dentro' ? 'green' : 'red';
-            const estadoIcono = dispositivo.estadoActual === 'dentro' ? '🟢' : '🔴';
-            
-            const customIcon = L.divIcon({
-              className: 'custom-marker',
-              html: `<div style="background-color: ${estadoColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px;">${estadoIcono}</div>`,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10]
-            });
-            
-            L.marker([ultimaUbicacion.latitud, ultimaUbicacion.longitud], { icon: customIcon })
-              .addTo(map)
-              .bindPopup(
-                `<b>${dispositivo.empleadoNombre || 'Dispositivo'}</b><br/>
-                 <small>ID: ${dispositivo.empleadoId}</small><br/>
-                 <span style="color: ${estadoColor};">${estadoIcono} ${ultimaUbicacion.tipoEvento || 'Ubicación'}</span><br/>
-                 ${ultimaUbicacion.plantaNombre ? `Planta: ${ultimaUbicacion.plantaNombre}<br/>` : ''}
-                 <small>${ultimaUbicacion.fechaHora}</small>`
-              );
+    try {
+      const r = await fetch(apiUrl('/api/checador/dispositivos-activos'));
+      if (!r.ok) {
+        console.error('Error HTTP cargando dispositivos:', r.status);
+        return;
+      }
+      const res = await r.json();
+      if (!res.error && res.data && Array.isArray(res.data)) {
+        // Crear un marcador por dispositivo con su última ubicación
+        (res.data as any[]).forEach((dispositivo: any) => {
+          const ultimaUbicacion = dispositivo.ultimaUbicacion;
+          if (!ultimaUbicacion || !ultimaUbicacion.latitud || !ultimaUbicacion.longitud) {
+            return;
+          }
+          
+          const estadoColor = dispositivo.estadoActual === 'dentro' ? 'green' : 'red';
+          const estadoIcono = dispositivo.estadoActual === 'dentro' ? '🟢' : '🔴';
+          
+          const customIcon = L.divIcon({
+            className: 'custom-marker',
+            html: `<div style="background-color: ${estadoColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px;">${estadoIcono}</div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
           });
-        }
-      });
+          
+          L.marker([ultimaUbicacion.latitud, ultimaUbicacion.longitud], { icon: customIcon })
+            .addTo(map)
+            .bindPopup(
+              `<b>${dispositivo.empleadoNombre || 'Dispositivo'}</b><br/>
+               <small>ID: ${dispositivo.empleadoId}</small><br/>
+               <span style="color: ${estadoColor};">${estadoIcono} ${ultimaUbicacion.tipoEvento || 'Ubicación'}</span><br/>
+               ${ultimaUbicacion.plantaNombre ? `Planta: ${ultimaUbicacion.plantaNombre}<br/>` : ''}
+               <small>${ultimaUbicacion.fechaHora}</small>`
+            );
+        });
+      }
+    } catch (error) {
+      console.error('Error cargando dispositivos:', error);
+    }
   }
 
   async function guardarGeocerca(geocerca: any) {
@@ -59,14 +69,22 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(geocerca)
       });
-      const data = await res.json();
-      if (res.ok) {
-        alert('Geocerca guardada');
-        await cargarGeocercas();
-        await mostrarGeocercasGuardadas();
-      } else {
-        alert('Error al guardar geocerca: ' + (data.message || '')); 
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: `Error HTTP ${res.status}` }));
+        alert('Error al guardar geocerca: ' + (errorData.message || `Error ${res.status}`));
+        return;
       }
+
+      const data = await res.json();
+      if (data.error) {
+        alert('Error al guardar geocerca: ' + (data.message || ''));
+        return;
+      }
+
+      alert('Geocerca guardada');
+      await cargarGeocercas();
+      await mostrarGeocercasGuardadas();
     } catch (e) {
       alert('Error de red al guardar geocerca');
     } finally {
@@ -77,8 +95,12 @@
   async function cargarGeocercas() {
     try {
       const res = await fetch(apiUrl('/api/geocercas'));
+      if (!res.ok) {
+        console.error('Error HTTP:', res.status);
+        return;
+      }
       const data = await res.json();
-      if (data.data && Array.isArray(data.data)) {
+      if (!data.error && data.data && Array.isArray(data.data)) {
         geocercas = data.data;
       }
     } catch (e) {
@@ -96,15 +118,23 @@
       const res = await fetch(apiUrl(`/api/geocercas/${id}`), {
         method: 'DELETE'
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: `Error HTTP ${res.status}` }));
+        alert('Error al eliminar geocerca: ' + (errorData.message || `Error ${res.status}`));
+        return;
+      }
+
       const data = await res.json();
       
-      if (res.ok) {
-        alert('Geocerca eliminada exitosamente');
-        await cargarGeocercas();
-        await mostrarGeocercasGuardadas();
-      } else {
+      if (data.error) {
         alert('Error al eliminar geocerca: ' + (data.message || ''));
+        return;
       }
+
+      alert('Geocerca eliminada exitosamente');
+      await cargarGeocercas();
+      await mostrarGeocercasGuardadas();
     } catch (e) {
       alert('Error de red al eliminar geocerca');
     } finally {
@@ -115,8 +145,12 @@
   async function mostrarGeocercasGuardadas(L?: any) {
     try {
       const res = await fetch(apiUrl('/api/geocercas'));
+      if (!res.ok) {
+        console.error('Error HTTP cargando geocercas:', res.status);
+        return;
+      }
       const data = await res.json();
-      if (data.data && Array.isArray(data.data)) {
+      if (!data.error && data.data && Array.isArray(data.data)) {
         // Limpiar geocercas previas del mapa
         map.eachLayer((layer: any) => {
           if (layer instanceof L.Circle || layer instanceof L.Polygon) {

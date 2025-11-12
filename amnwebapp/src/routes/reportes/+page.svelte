@@ -22,9 +22,13 @@
       
       // Cargar dispositivos activos con nueva API
       const dispositivosRes = await fetch(apiUrl('/api/checador/dispositivos-activos'));
-      const dispositivosData = await dispositivosRes.json();
-      dispositivos = dispositivosData.data || [];
-      console.log(`📱 [Reportes] Dispositivos activos: ${dispositivos.length}`);
+      if (dispositivosRes.ok) {
+        const dispositivosData = await dispositivosRes.json();
+        if (!dispositivosData.error) {
+          dispositivos = dispositivosData.data || [];
+          console.log(`📱 [Reportes] Dispositivos activos: ${dispositivos.length}`);
+        }
+      }
 
       // Cargar eventos con filtros usando nueva API
       const params = new URLSearchParams();
@@ -36,16 +40,24 @@
       params.append('skip', (paginaActual * eventosPorPagina).toString());
 
       const eventosRes = await fetch(apiUrl(`/api/checador/eventos-filtrados?${params}`));
-      const eventosData = await eventosRes.json();
-      eventos = eventosData.data || [];
-      totalEventos = eventosData.total || 0;
-      console.log(`📊 [Reportes] Eventos cargados: ${eventos.length} de ${totalEventos} total`);
+      if (eventosRes.ok) {
+        const eventosData = await eventosRes.json();
+        if (!eventosData.error) {
+          eventos = eventosData.data || [];
+          totalEventos = eventosData.total || 0;
+          console.log(`📊 [Reportes] Eventos cargados: ${eventos.length} de ${totalEventos} total`);
+        }
+      }
 
       // Cargar geocercas
       const geocercasRes = await fetch(apiUrl('/api/geocercas'));
-      const geocercasData = await geocercasRes.json();
-      geocercas = geocercasData.data || [];
-      console.log(`📍 [Reportes] Geocercas: ${geocercas.length}`);
+      if (geocercasRes.ok) {
+        const geocercasData = await geocercasRes.json();
+        if (!geocercasData.error) {
+          geocercas = geocercasData.data || [];
+          console.log(`📍 [Reportes] Geocercas: ${geocercas.length}`);
+        }
+      }
 
       // Cargar estadísticas con filtros
       const estadisticasParams = new URLSearchParams();
@@ -53,9 +65,13 @@
       if (filtroFechaFin) estadisticasParams.append('fechaFin', filtroFechaFin);
       
       const estadisticasRes = await fetch(apiUrl(`/api/checador/estadisticas?${estadisticasParams}`));
-      const estadisticasData = await estadisticasRes.json();
-      estadisticasGlobales = estadisticasData.data || {};
-      console.log(`📈 [Reportes] Estadísticas:`, estadisticasGlobales);
+      if (estadisticasRes.ok) {
+        const estadisticasData = await estadisticasRes.json();
+        if (!estadisticasData.error) {
+          estadisticasGlobales = estadisticasData.data || {};
+          console.log(`📈 [Reportes] Estadísticas:`, estadisticasGlobales);
+        }
+      }
 
     } catch (error) {
       console.error('❌ [Reportes] Error cargando datos:', error);

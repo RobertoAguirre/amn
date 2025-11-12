@@ -31,21 +31,32 @@
         body: JSON.stringify(formData)
       });
       
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Error HTTP ${response.status}` }));
+        errorMessage = errorData.message || `Error en la operación (${response.status})`;
+        return;
+      }
+
       const data = await response.json();
       
-      if (response.ok) {
-        if (isLogin) {
-          // Guardar token y redirigir
+      if (data.error) {
+        errorMessage = data.message || 'Error en la operación';
+        return;
+      }
+
+      if (isLogin) {
+        // Guardar token y redirigir
+        if (data.data && data.data.token) {
           localStorage.setItem('token', data.data.token);
-          localStorage.setItem('user', JSON.stringify(data.data.operador));
+          localStorage.setItem('user', JSON.stringify(data.data.operador || data.data));
           successMessage = 'Login exitoso';
           setTimeout(() => goto('/dashboard'), 800);
         } else {
-          successMessage = 'Usuario registrado exitosamente';
-          isLogin = true; // Cambiar a login después del registro
+          errorMessage = 'Respuesta inválida del servidor';
         }
       } else {
-        errorMessage = data.message || 'Error en la operación';
+        successMessage = 'Usuario registrado exitosamente';
+        isLogin = true; // Cambiar a login después del registro
       }
     } catch (error) {
       errorMessage = 'Error de conexión';

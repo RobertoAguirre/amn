@@ -77,6 +77,14 @@
       params.append('fechaFin', fechaFin);
 
       const res = await fetch(apiUrl(`/api/checador/historial-movimiento?${params}`));
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: `Error HTTP ${res.status}` }));
+        console.error('❌ [Historial] Error HTTP:', res.status);
+        alert(`Error: ${errorData.message || `Error ${res.status}`}`);
+        return;
+      }
+
       const data = await res.json();
       
       if (data.error) {

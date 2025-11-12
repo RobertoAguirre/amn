@@ -113,32 +113,110 @@
   }
 
   function obtenerTotalTiempoEfectivo() {
-    return reporteNomina.reduce((total, empleado) => total + empleado.tiempoEfectivoHoras, 0);
+    return reporteNomina.reduce((total, empleado) => total + (empleado.tiempoEfectivoHoras || 0), 0);
   }
 
   function obtenerTotalTiempoComida() {
-    return reporteNomina.reduce((total, empleado) => total + empleado.tiempoComidaHoras, 0);
+    return reporteNomina.reduce((total, empleado) => total + (empleado.tiempoComidaHoras || 0), 0);
   }
 
-  function probarClick() {
-    console.log('🎯 [Nómina] Botón clickeado!');
-    alert('El botón funciona correctamente');
-  }
 
-  async function probarConexion() {
+  function exportarAExcel() {
+    if (reporteNomina.length === 0) {
+      alert('No hay datos para exportar. Genera el reporte primero.');
+      return;
+    }
+
     try {
-      console.log('🧪 [Nómina] Probando conexión...');
-      const url = apiUrl('/api/checador/test');
-      console.log('🌐 [Nómina] URL de prueba:', url);
+      // Crear encabezados del CSV
+      const headers = [
+        'Empleado ID',
+        'Nombre Empleado',
+        'Planta ID',
+        'Tiempo en Geocerca (hrs)',
+        'Tiempo Comida (hrs)',
+        'Tiempo Efectivo (hrs)',
+        'Tiempo Esperado (hrs)',
+        'Diferencia (hrs)',
+        'Días Trabajados',
+        'Días Faltados',
+        'Tardanzas',
+        'Minutos Tardanza Total',
+        'Salidas Tempranas',
+        'Minutos Salida Temprana Total',
+        'Horas Extra',
+        'Minutos Extra',
+        'Estado Actual',
+        'Tiene Horario',
+        'Horario Nombre'
+      ];
+
+      // Crear filas de datos
+      const rows = reporteNomina.map(empleado => [
+        empleado.empleadoId || '',
+        empleado.empleadoNombre || '',
+        empleado.plantaId || '',
+        empleado.tiempoEnGeocercaHoras?.toFixed(2) || '0.00',
+        empleado.tiempoComidaHoras?.toFixed(2) || '0.00',
+        empleado.tiempoEfectivoHoras?.toFixed(2) || '0.00',
+        empleado.tiempoEsperadoHoras?.toFixed(2) || '',
+        empleado.diferenciaHoras?.toFixed(2) || '',
+        empleado.diasTrabajados || 0,
+        empleado.diasFaltados || 0,
+        empleado.tardanzas || 0,
+        empleado.minutosTardanzaTotal || 0,
+        empleado.salidasTempranas || 0,
+        empleado.minutosSalidaTempranaTotal || 0,
+        empleado.horasExtra?.toFixed(2) || '0.00',
+        empleado.minutosExtra || 0,
+        empleado.estadoActual || 'fuera',
+        empleado.tieneHorario ? 'Sí' : 'No',
+        empleado.horarioNombre || ''
+      ]);
+
+      // Combinar encabezados y filas
+      const csvRows = [
+        headers.map(h => {
+          // Escapar comillas en headers también
+          if (h.includes(',') || h.includes('"') || h.includes('\n')) {
+            return `"${h.replace(/"/g, '""')}"`;
+          }
+          return h;
+        }).join(','),
+        ...rows.map(row => row.map(cell => {
+          // Escapar comillas y envolver en comillas si contiene comas
+          const cellStr = String(cell);
+          if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+            return `"${cellStr.replace(/"/g, '""')}"`;
+          }
+          return cellStr;
+        }).join(','))
+      ];
+      const csvContent = csvRows.join('\n');
+
+      // Agregar BOM para Excel (UTF-8)
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
       
-      const res = await fetch(url);
-      const data = await res.json();
-      
-      console.log('✅ [Nómina] Conexión exitosa:', data);
-      alert(`Conexión exitosa! Total eventos: ${data.data.totalEventos}`);
+      // Crear nombre de archivo con fecha
+      const fechaInicio = filtroFechaInicio || 'inicio';
+      const fechaFin = filtroFechaFin || 'fin';
+      const nombreArchivo = `Reporte_Nomina_${fechaInicio}_${fechaFin}.csv`;
+
+      // Descargar archivo
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', nombreArchivo);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log('✅ [Nómina] Archivo exportado exitosamente');
     } catch (error: any) {
-      console.error('❌ [Nómina] Error de conexión:', error);
-      alert(`Error de conexión: ${error.message}`);
+      console.error('❌ [Nómina] Error al exportar:', error);
+      alert(`Error al exportar: ${error.message}`);
     }
   }
 
@@ -157,18 +235,6 @@
     <h1 class="text-2xl font-bold">Reporte de Nómina</h1>
     <div class="flex space-x-2">
       <button 
-        class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
-        on:click={probarClick}
-      >
-        Probar Click
-      </button>
-      <button 
-        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-        on:click={probarConexion}
-      >
-        Probar Conexión
-      </button>
-      <button 
         class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
         on:click={() => {
           console.log('🎯 [Nómina] Botón Generar Reporte clickeado!');
@@ -177,6 +243,17 @@
         disabled={loading}
       >
         {loading ? 'Cargando...' : 'Generar Reporte'}
+      </button>
+      <button 
+        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
+        on:click={exportarAExcel}
+        disabled={reporteNomina.length === 0 || loading}
+        title="Exportar a Excel (CSV)"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <span>Exportar Excel</span>
       </button>
     </div>
   </div>
@@ -194,24 +271,27 @@
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio *</label>
+        <label for="filtro-fecha-inicio" class="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio *</label>
         <input 
+          id="filtro-fecha-inicio"
           type="date" 
           bind:value={filtroFechaInicio}
           class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
         />
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Fin *</label>
+        <label for="filtro-fecha-fin" class="block text-sm font-medium text-gray-700 mb-1">Fecha Fin *</label>
         <input 
+          id="filtro-fecha-fin"
           type="date" 
           bind:value={filtroFechaFin}
           class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
         />
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Empleado</label>
+        <label for="filtro-empleado" class="block text-sm font-medium text-gray-700 mb-1">Empleado</label>
         <input 
+          id="filtro-empleado"
           type="text" 
           bind:value={filtroEmpleado}
           placeholder="Buscar por nombre..."
@@ -246,6 +326,36 @@
         </p>
       </div>
     </div>
+    
+    <!-- Resumen de Asistencia (si hay horarios configurados) -->
+    {#if reporteNomina.some(e => e.tieneHorario)}
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+          <h3 class="text-sm font-medium text-gray-500">Total Faltas</h3>
+          <p class="text-2xl font-bold text-red-600">
+            {reporteNomina.reduce((sum, e) => sum + (e.diasFaltados || 0), 0)}
+          </p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-orange-500">
+          <h3 class="text-sm font-medium text-gray-500">Total Tardanzas</h3>
+          <p class="text-2xl font-bold text-orange-600">
+            {reporteNomina.reduce((sum, e) => sum + (e.tardanzas || 0), 0)}
+          </p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+          <h3 class="text-sm font-medium text-gray-500">Total Horas Extra</h3>
+          <p class="text-2xl font-bold text-blue-600">
+            {reporteNomina.reduce((sum, e) => sum + (e.horasExtra || 0), 0).toFixed(2)} hrs
+          </p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+          <h3 class="text-sm font-medium text-gray-500">Días Trabajados</h3>
+          <p class="text-2xl font-bold text-green-600">
+            {reporteNomina.reduce((sum, e) => sum + (e.diasTrabajados || 0), 0)}
+          </p>
+        </div>
+      </div>
+    {/if}
   {/if}
 
   <!-- Tabla de Reporte -->
@@ -263,6 +373,14 @@
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Tiempo en Geocerca</th>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Tiempo Comida</th>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Tiempo Efectivo</th>
+              {#if reporteNomina.some(e => e.tieneHorario)}
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Tiempo Esperado</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Diferencia</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Días Trab.</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Faltas</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Tardanzas</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Hrs Extra</th>
+              {/if}
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Último Evento</th>
             </tr>
           </thead>
@@ -281,24 +399,70 @@
                   </span>
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-900">
-                  {empleado.tiempoEnGeocercaHoras.toFixed(2)} hrs
+                  {(empleado.tiempoEnGeocercaHoras || 0).toFixed(2)} hrs
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-900">
-                  {empleado.tiempoComidaHoras.toFixed(2)} hrs
+                  {(empleado.tiempoComidaHoras || 0).toFixed(2)} hrs
                 </td>
                 <td class="px-4 py-3">
                   <span class="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-semibold">
-                    {empleado.tiempoEfectivoHoras.toFixed(2)} hrs
+                    {(empleado.tiempoEfectivoHoras || 0).toFixed(2)} hrs
                   </span>
                 </td>
+                {#if reporteNomina.some(e => e.tieneHorario)}
+                  <td class="px-4 py-3 text-sm text-gray-900">
+                    {empleado.tiempoEsperadoHoras ? `${empleado.tiempoEsperadoHoras.toFixed(2)} hrs` : '-'}
+                  </td>
+                  <td class="px-4 py-3 text-sm">
+                    {#if empleado.diferenciaHoras !== null && empleado.diferenciaHoras !== undefined}
+                      <span class="inline-block px-2 py-1 text-xs rounded-full {empleado.diferenciaHoras >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                        {empleado.diferenciaHoras >= 0 ? '+' : ''}{empleado.diferenciaHoras.toFixed(2)} hrs
+                      </span>
+                    {:else}
+                      <span class="text-gray-400">-</span>
+                    {/if}
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-900">
+                    {empleado.diasTrabajados || 0}
+                  </td>
+                  <td class="px-4 py-3 text-sm">
+                    {#if empleado.diasFaltados > 0}
+                      <span class="inline-block px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 font-semibold">
+                        {empleado.diasFaltados}
+                      </span>
+                    {:else}
+                      <span class="text-gray-400">0</span>
+                    {/if}
+                  </td>
+                  <td class="px-4 py-3 text-sm">
+                    {#if empleado.tardanzas > 0}
+                      <span class="inline-block px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-800">
+                        {empleado.tardanzas} ({Math.round(empleado.minutosTardanzaTotal || 0)} min)
+                      </span>
+                    {:else}
+                      <span class="text-gray-400">0</span>
+                    {/if}
+                  </td>
+                  <td class="px-4 py-3 text-sm">
+                    {#if empleado.horasExtra > 0}
+                      <span class="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-semibold">
+                        {empleado.horasExtra.toFixed(2)} hrs
+                      </span>
+                    {:else}
+                      <span class="text-gray-400">0.00</span>
+                    {/if}
+                  </td>
+                {/if}
                 <td class="px-4 py-3 text-sm text-gray-900">
-                  {#if empleado.eventos.length > 0}
+                  {#if empleado.eventos && empleado.eventos.length > 0}
                     <div>
                       <p class="text-xs font-medium">{empleado.eventos[empleado.eventos.length - 1].tipoEvento}</p>
                       <p class="text-xs text-gray-500">
                         {formatearFecha(empleado.eventos[empleado.eventos.length - 1].fechaHora)}
                       </p>
                     </div>
+                  {:else}
+                    <span class="text-gray-400">-</span>
                   {/if}
                 </td>
               </tr>

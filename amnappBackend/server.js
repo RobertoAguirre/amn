@@ -115,6 +115,7 @@ app.use('/api/reportes', require('./routes/reportes'));
 app.use('/api/sync', require('./routes/sync'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/geocercas', require('./routes/geocercas'));
+app.use('/api/notificaciones', require('./routes/notificaciones'));
 
 // Endpoint MVP para checador (ubicación de dispositivos)
 app.use('/api/checador', require('./routes/checador_mvp'));
