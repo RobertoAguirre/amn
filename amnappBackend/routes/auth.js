@@ -131,4 +131,121 @@ router.post('/login', loginValidation, validateRequest, async (req, res) => {
   }
 });
 
+// GET /api/auth/usuarios - Listar todos los usuarios/operadores
+router.get('/usuarios', auth, async (req, res) => {
+  try {
+    const usuarios = await Operador.find()
+      .select('-password') // No enviar passwords
+      .sort({ nombre: 1 });
+    
+    res.json({
+      error: false,
+      data: usuarios
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: true,
+      message: 'Error al obtener usuarios',
+      details: error.message
+    });
+  }
+});
+
+// GET /api/auth/usuarios/:id - Obtener un usuario específico
+router.get('/usuarios/:id', auth, async (req, res) => {
+  try {
+    const usuario = await Operador.findById(req.params.id).select('-password');
+    
+    if (!usuario) {
+      return res.status(404).json({
+        error: true,
+        message: 'Usuario no encontrado'
+      });
+    }
+    
+    res.json({
+      error: false,
+      data: usuario
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: true,
+      message: 'Error al obtener usuario',
+      details: error.message
+    });
+  }
+});
+
+// PUT /api/auth/usuarios/:id - Actualizar usuario
+router.put('/usuarios/:id', auth, async (req, res) => {
+  try {
+    const { nombre, supervisor, activo, password } = req.body;
+    const usuario = await Operador.findById(req.params.id);
+    
+    if (!usuario) {
+      return res.status(404).json({
+        error: true,
+        message: 'Usuario no encontrado'
+      });
+    }
+    
+    if (nombre !== undefined) usuario.nombre = nombre;
+    if (supervisor !== undefined) usuario.supervisor = supervisor;
+    if (activo !== undefined) usuario.activo = activo;
+    if (password !== undefined && password.length >= 6) {
+      usuario.password = password; // Se hasheará automáticamente en el pre-save
+    }
+    
+    await usuario.save();
+    
+    const usuarioRespuesta = usuario.toObject();
+    delete usuarioRespuesta.password;
+    
+    res.json({
+      error: false,
+      message: 'Usuario actualizado exitosamente',
+      data: usuarioRespuesta
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: true,
+      message: 'Error al actualizar usuario',
+      details: error.message
+    });
+  }
+});
+
+// DELETE /api/auth/usuarios/:id - Eliminar usuario (desactivar)
+router.delete('/usuarios/:id', auth, async (req, res) => {
+  try {
+    const usuario = await Operador.findById(req.params.id);
+    
+    if (!usuario) {
+      return res.status(404).json({
+        error: true,
+        message: 'Usuario no encontrado'
+      });
+    }
+    
+    // En lugar de eliminar, desactivar
+    usuario.activo = false;
+    await usuario.save();
+    
+    const usuarioRespuesta = usuario.toObject();
+    delete usuarioRespuesta.password;
+    
+    res.json({
+      error: false,
+      message: 'Usuario desactivado exitosamente',
+      data: usuarioRespuesta
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: true,
+      message: 'Error al desactivar usuario',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router; 
