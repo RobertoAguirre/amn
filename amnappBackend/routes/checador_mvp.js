@@ -284,7 +284,18 @@ router.get('/estadisticas', async (req, res) => {
       }
     }
     
+    // Total de eventos (con o sin filtros)
     const totalEventos = await ChecadorEvento.countDocuments(filtroFecha);
+    
+    // Eventos de hoy (siempre calcular, independiente de filtros)
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const manana = new Date(hoy);
+    manana.setDate(manana.getDate() + 1);
+    const eventosHoy = await ChecadorEvento.countDocuments({
+      fechaHora: { $gte: hoy, $lt: manana }
+    });
+    
     const entradas = await ChecadorEvento.countDocuments({ ...filtroFecha, tipoEvento: 'entrada' });
     const salidas = await ChecadorEvento.countDocuments({ ...filtroFecha, tipoEvento: 'salida' });
     const dispositivosUnicos = await ChecadorEvento.distinct('empleadoId', filtroFecha);
@@ -293,6 +304,7 @@ router.get('/estadisticas', async (req, res) => {
       error: false,
       data: {
         totalEventos,
+        eventosHoy,
         entradas,
         salidas,
         dispositivosActivos: dispositivosUnicos.length

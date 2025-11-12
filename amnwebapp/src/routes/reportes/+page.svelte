@@ -59,18 +59,17 @@
         }
       }
 
-      // Cargar estadísticas con filtros
-      const estadisticasParams = new URLSearchParams();
-      if (filtroFechaInicio) estadisticasParams.append('fechaInicio', filtroFechaInicio);
-      if (filtroFechaFin) estadisticasParams.append('fechaFin', filtroFechaFin);
-      
-      const estadisticasRes = await fetch(apiUrl(`/api/checador/estadisticas?${estadisticasParams}`));
+      // Cargar estadísticas globales (siempre sin filtros para tener el total real)
+      // Los filtros solo afectan a la lista de eventos, no a las estadísticas globales
+      const estadisticasRes = await fetch(apiUrl('/api/checador/estadisticas'));
       if (estadisticasRes.ok) {
         const estadisticasData = await estadisticasRes.json();
         if (!estadisticasData.error) {
           estadisticasGlobales = estadisticasData.data || {};
-          console.log(`📈 [Reportes] Estadísticas:`, estadisticasGlobales);
+          console.log(`📈 [Reportes] Estadísticas globales:`, estadisticasGlobales);
         }
+      } else {
+        console.warn('⚠️ [Reportes] No se pudieron cargar estadísticas globales');
       }
 
     } catch (error) {
@@ -81,14 +80,16 @@
   }
 
   function obtenerEstadisticas() {
-    const hoy = new Date().toDateString();
-    const eventosHoy = eventos.filter(e => 
-      new Date(e.fechaHora).toDateString() === hoy
-    ).length;
+    // Usar estadísticas del backend cuando están disponibles
+    // Si hay filtros aplicados, usar totalEventos de la paginación
+    // Si no hay filtros, usar estadisticasGlobales.totalEventos
+    const totalEventosCalculado = filtroFechaInicio || filtroFechaFin 
+      ? totalEventos 
+      : (estadisticasGlobales.totalEventos || totalEventos || 0);
     
     return {
-      totalEventos: totalEventos || estadisticasGlobales.totalEventos || 0,
-      eventosHoy: eventosHoy,
+      totalEventos: totalEventosCalculado,
+      eventosHoy: estadisticasGlobales.eventosHoy || 0,
       dispositivosActivos: dispositivos.length,
       geocercasActivas: geocercas.length
     };
