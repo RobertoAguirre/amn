@@ -47,8 +47,15 @@
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: `Error HTTP ${res.status}` }));
-        errorMessage = errorData.message || `Error al cargar usuarios (${res.status})`;
-        console.error('Error cargando usuarios:', errorData);
+        // Si es 404, el endpoint puede no estar disponible aún en Render
+        if (res.status === 404) {
+          errorMessage = 'El endpoint de usuarios no está disponible. El backend puede estar actualizándose. Intenta en unos momentos.';
+        } else if (res.status === 401) {
+          errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente.';
+        } else {
+          errorMessage = errorData.message || `Error al cargar usuarios (${res.status})`;
+        }
+        console.error('Error cargando usuarios:', { status: res.status, error: errorData });
         usuarios = [];
         return;
       }
