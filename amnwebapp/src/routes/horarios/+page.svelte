@@ -4,7 +4,8 @@
 
   let horarios: any[] = [];
   let empleados: any[] = [];
-  let plantas: string[] = [];
+  let plantas: Array<{id: string, nombre: string}> = [];
+  let geocercas: any[] = [];
   let loading = false;
   let loadingEmpleados = false;
   let saving = false;
@@ -47,8 +48,7 @@
 
   onMount(async () => {
     await cargarEmpleados();
-    await cargarHorarios();
-    extraerPlantas();
+    await cargarHorarios(); // cargarHorarios() llama a cargarGeocercas() al final
   });
 
   async function cargarEmpleados() {
@@ -97,7 +97,8 @@
       }
 
       horarios = data.data || [];
-      extraerPlantas();
+      // Recargar plantas después de cargar horarios para incluir plantas de horarios existentes
+      await cargarGeocercas();
     } catch (error: any) {
       errorMessage = `Error de conexión: ${error.message}`;
     } finally {
@@ -105,12 +106,44 @@
     }
   }
 
+  async function cargarGeocercas() {
+    try {
+      const res = await fetch(apiUrl('/api/geocercas'));
+      if (!res.ok) {
+        console.error('Error HTTP cargando geocercas:', res.status);
+        return;
+      }
+      const data = await res.json();
+      if (data.error) {
+        console.error('Error cargando geocercas:', data.message);
+        return;
+      }
+      geocercas = data.data || [];
+      // Extraer plantas únicas de las geocercas
+      const plantasSet = new Map<string, string>(); // Map<plantaId, nombre>
+      geocercas.forEach((g: any) => {
+        if (g.plantaId && g.nombre) {
+          plantasSet.set(g.plantaId, g.nombre);
+        }
+      });
+      // También agregar plantas de horarios existentes (por si hay plantas sin geocercas)
+      horarios.forEach((h: any) => {
+        if (h.plantaId && !plantasSet.has(h.plantaId)) {
+          plantasSet.set(h.plantaId, h.plantaId); // Usar ID como nombre si no hay geocerca
+        }
+      });
+      // Convertir a array de objetos para el dropdown, ordenado por nombre
+      plantas = Array.from(plantasSet.entries())
+        .map(([id, nombre]) => ({ id, nombre }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+    } catch (error) {
+      console.error('Error cargando geocercas:', error);
+    }
+  }
+
   function extraerPlantas() {
-    const plantasSet = new Set<string>();
-    horarios.forEach(h => {
-      if (h.plantaId) plantasSet.add(h.plantaId);
-    });
-    plantas = Array.from(plantasSet).sort();
+    // Esta función ahora solo se usa para mantener compatibilidad
+    // Las plantas reales vienen de cargarGeocercas()
   }
 
   function toggleDiaLaborable(dia: number) {
@@ -309,7 +342,7 @@
         >
           <option value="">Todas</option>
           {#each plantas as planta}
-            <option value={planta}>{planta}</option>
+            <option value={planta.id}>{planta.nombre} ({planta.id})</option>
           {/each}
         </select>
       </div>
@@ -373,7 +406,12 @@
                 <td class="px-4 py-3">
                   <span class="font-medium">{horario.nombre}</span>
                 </td>
-                <td class="px-4 py-3 text-sm">{horario.plantaId || 'N/A'}</td>
+                <td class="px-4 py-3 text-sm">
+                  {(() => {
+                    const planta = plantas.find(p => p.id === horario.plantaId);
+                    return planta ? `${planta.nombre} (${planta.id})` : (horario.plantaId || 'N/A');
+                  })()}
+                </td>
                 <td class="px-4 py-3 text-sm">
                   {obtenerNombreEmpleado(horario.empleadoId)}
                 </td>
@@ -454,15 +492,27 @@
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Planta ID *
+                  Planta *
                 </label>
-                <input 
-                  type="text"
+                <select 
                   bind:value={formData.plantaId}
-                  placeholder="ID de la planta"
                   class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-yellow-500"
                   required
-                />
+                >
+                  <option value="">Selecciona una planta</option>
+                  {#each plantas as planta}
+                    <option value={planta.id}>{planta.nombre} ({planta.id})</option>
+                  {/each}
+                </select>
+                {#if plantas.length === 0}
+                  <p class="text-xs text-gray-500 mt-1">
+                    No hay plantas disponibles. Crea geocercas primero para definir plantas.
+                  </p>
+                {:else}
+                  <p class="text-xs text-gray-500 mt-1">
+                    Las plantas se obtienen de las geocercas configuradas.
+                  </p>
+                {/if}
               </div>
 
               <div>
