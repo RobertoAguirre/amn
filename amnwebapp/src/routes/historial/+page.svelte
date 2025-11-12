@@ -18,7 +18,7 @@
 
   onMount(async () => {
     await cargarEmpleados();
-    inicializarMapa();
+    await inicializarMapa();
   });
 
   async function cargarEmpleados() {
@@ -42,22 +42,33 @@
     }
   }
 
-  function inicializarMapa() {
-    // Verificar si Leaflet está disponible
-    if (typeof L === 'undefined') {
-      console.error('❌ [Historial] Leaflet no está disponible');
-      return;
-    }
+  async function inicializarMapa() {
+    try {
+      // Importar Leaflet dinámicamente (igual que en geocercas)
+      const L = (await import('leaflet')).default;
+      await import('leaflet/dist/leaflet.css');
+      
+      // Esperar a que el DOM esté listo
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const mapElement = document.getElementById('mapa-historial');
+      if (!mapElement) {
+        console.error('❌ [Historial] Elemento del mapa no encontrado');
+        return;
+      }
 
-    // Crear mapa si no existe
-    if (!map) {
-      map = L.map('mapa-historial').setView([19.4326, -99.1332], 13); // México City por defecto
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
-      
-      console.log('🗺️ [Historial] Mapa inicializado');
+      // Crear mapa si no existe
+      if (!map) {
+        map = L.map('mapa-historial').setView([19.4326, -99.1332], 13); // México City por defecto
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        console.log('🗺️ [Historial] Mapa inicializado correctamente');
+      }
+    } catch (error) {
+      console.error('❌ [Historial] Error inicializando mapa:', error);
     }
   }
 
@@ -113,14 +124,41 @@
     }
   }
 
-  function mostrarRutaEnMapa() {
-    if (!map || historialEventos.length === 0) return;
+  async function mostrarRutaEnMapa() {
+    // Asegurar que Leaflet esté cargado
+    let L: any;
+    try {
+      L = (await import('leaflet')).default;
+    } catch (error) {
+      console.error('❌ [Historial] Error cargando Leaflet:', error);
+      return;
+    }
+
+    if (!map || historialEventos.length === 0) {
+      console.warn('⚠️ [Historial] Mapa no inicializado o sin eventos');
+      if (!map) {
+        await inicializarMapa();
+        if (!map) {
+          console.error('❌ [Historial] No se pudo inicializar el mapa');
+          return;
+        }
+      } else {
+        return;
+      }
+    }
 
     // Limpiar marcadores y línea anteriores
     limpiarMapa();
 
     // Crear array de coordenadas para la línea
-    const coordenadas = historialEventos.map(evento => [evento.latitud, evento.longitud]);
+    const coordenadas = historialEventos
+      .filter(e => e.latitud && e.longitud)
+      .map(evento => [evento.latitud, evento.longitud] as [number, number]);
+    
+    if (coordenadas.length === 0) {
+      console.warn('⚠️ [Historial] No hay coordenadas válidas para mostrar');
+      return;
+    }
     
     // Dibujar línea de ruta
     polyline = L.polyline(coordenadas, {
@@ -131,9 +169,14 @@
 
     // Agregar marcadores para cada evento
     historialEventos.forEach((evento, index) => {
+      if (!evento.latitud || !evento.longitud) {
+        console.warn(`⚠️ [Historial] Evento ${index + 1} sin coordenadas válidas`);
+        return;
+      }
+
       const marker = L.circleMarker([evento.latitud, evento.longitud], {
         radius: 8,
-        fillColor: evento.color,
+        fillColor: evento.color || '#666666',
         color: '#fff',
         weight: 2,
         opacity: 1,
@@ -141,7 +184,9 @@
       }).addTo(map);
 
       // Agregar popup con información del evento
-      marker.bindPopup(evento.popup);
+      const popupContent = evento.popup || 
+        `${evento.icono || '📍'} ${evento.tipoEvento || 'Evento'}<br>${evento.plantaNombre || 'Sin planta'}<br>${new Date(evento.fechaHora).toLocaleString('es-MX')}`;
+      marker.bindPopup(popupContent);
       
       // Agregar tooltip con número de secuencia
       marker.bindTooltip(`${index + 1}`, { permanent: false });
@@ -151,7 +196,15 @@
 
     // Ajustar vista del mapa para mostrar toda la ruta
     if (coordenadas.length > 0) {
-      map.fitBounds(polyline.getBounds(), { padding: [20, 20] });
+      try {
+        map.fitBounds(polyline.getBounds(), { padding: [20, 20] });
+      } catch (error) {
+        console.error('❌ [Historial] Error ajustando vista del mapa:', error);
+        // Si hay solo un punto, centrar en ese punto
+        if (coordenadas.length === 1) {
+          map.setView(coordenadas[0], 15);
+        }
+      }
     }
 
     console.log(`🗺️ [Historial] Ruta mostrada con ${markers.length} marcadores`);
