@@ -4,7 +4,8 @@
   
   let eventos: any[] = [];
   let empleados: any[] = [];
-  let plantas: string[] = [];
+  let plantas: Array<{id: string, nombre: string}> = [];
+  let geocercas: any[] = [];
   let loading = false;
   let saving = false;
   let eliminando = false;
@@ -47,13 +48,17 @@
 
   onMount(async () => {
     await cargarEmpleados();
+    await cargarGeocercas();
     await cargarEventos();
-    extraerPlantas();
   });
 
   async function cargarEmpleados() {
     try {
       const res = await fetch(apiUrl('/api/checador/empleados'));
+      if (!res.ok) {
+        console.error('Error HTTP cargando empleados:', res.status);
+        return;
+      }
       const data = await res.json();
       if (data.error) {
         console.error('Error cargando empleados:', data.message);
@@ -62,6 +67,41 @@
       empleados = data.data || [];
     } catch (error) {
       console.error('Error cargando empleados:', error);
+    }
+  }
+
+  async function cargarGeocercas() {
+    try {
+      const res = await fetch(apiUrl('/api/geocercas'));
+      if (!res.ok) {
+        console.error('Error HTTP cargando geocercas:', res.status);
+        return;
+      }
+      const data = await res.json();
+      if (data.error) {
+        console.error('Error cargando geocercas:', data.message);
+        return;
+      }
+      geocercas = data.data || [];
+      // Extraer plantas únicas de las geocercas
+      const plantasSet = new Map<string, string>(); // Map<plantaId, nombre>
+      geocercas.forEach((g: any) => {
+        if (g.plantaId && g.nombre) {
+          plantasSet.set(g.plantaId, g.nombre);
+        }
+      });
+      // También agregar plantas de eventos existentes (por si hay plantas sin geocercas)
+      eventos.forEach((e: any) => {
+        if (e.plantaId && !plantasSet.has(e.plantaId)) {
+          plantasSet.set(e.plantaId, e.plantaId); // Usar ID como nombre si no hay geocerca
+        }
+      });
+      // Convertir a array de objetos para el dropdown, ordenado por nombre
+      plantas = Array.from(plantasSet.entries())
+        .map(([id, nombre]) => ({ id, nombre }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+    } catch (error) {
+      console.error('Error cargando geocercas:', error);
     }
   }
 
@@ -95,7 +135,8 @@
 
       eventos = data.data || [];
       totalEventos = data.total || 0;
-      extraerPlantas();
+      // Recargar plantas después de cargar eventos para incluir plantas de eventos existentes
+      await cargarGeocercas();
     } catch (error: any) {
       errorMessage = `Error de conexión: ${error.message}`;
     } finally {
@@ -103,13 +144,6 @@
     }
   }
 
-  function extraerPlantas() {
-    const plantasSet = new Set<string>();
-    eventos.forEach(e => {
-      if (e.plantaId) plantasSet.add(e.plantaId);
-    });
-    plantas = Array.from(plantasSet).sort();
-  }
 
   function abrirFormularioEditar(evento: any) {
     if (!evento || !evento._id) {
@@ -324,23 +358,29 @@
       </div>
       <div>
         <label for="filtro-empleado" class="block text-sm font-medium text-gray-700 mb-1">Empleado</label>
-        <input
+        <select
           id="filtro-empleado"
-          type="text"
           bind:value={filtroEmpleado}
-          placeholder="Buscar por nombre..."
           class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-        />
+        >
+          <option value="">Todos los empleados</option>
+          {#each empleados as empleado}
+            <option value={empleado.empleadoNombre}>{empleado.empleadoNombre} ({empleado.empleadoId})</option>
+          {/each}
+        </select>
       </div>
       <div>
         <label for="filtro-planta" class="block text-sm font-medium text-gray-700 mb-1">Planta</label>
-        <input
+        <select
           id="filtro-planta"
-          type="text"
           bind:value={filtroPlanta}
-          placeholder="ID de planta..."
           class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-        />
+        >
+          <option value="">Todas las plantas</option>
+          {#each plantas as planta}
+            <option value={planta.id}>{planta.nombre} ({planta.id})</option>
+          {/each}
+        </select>
       </div>
       <div>
         <label for="filtro-tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo Evento</label>
